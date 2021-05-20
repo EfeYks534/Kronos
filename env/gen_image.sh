@@ -1,6 +1,6 @@
 rm -f shitos4.img
 
-dd if=/dev/zero bs=1M count=128 of=./shitos4.img
+dd if=/dev/zero bs=1M count=64 of=./shitos4.img
 
 parted -s ./shitos4.img mklabel msdos
 parted -s ./shitos4.img mkpart primary 1 100%

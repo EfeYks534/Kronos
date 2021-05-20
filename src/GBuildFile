@@ -4,10 +4,9 @@ if(!(argc - 2)) {
 		$"rm -f ../env/*.bin";
 		$"rm -f ../env/*.img";
 		#exit;
-	} else {
-		$"echo Undefined rule " + arg1 &;
-		#exit;
 	}
+	$"echo Undefined rule " + arg1 &;
+	#exit;
 }
 
 let avx512 = "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -mno-80387";
