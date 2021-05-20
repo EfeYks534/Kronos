@@ -1,0 +1,88 @@
+object oriented device system?
+
+Device
+-> type
+-> category
+-> name
+
+XDevice
+-> base (Device)
+-> x_dostuff()
+-> x_string("thinger")
+
+perhaps have a "primary" device for each category?
+
+processor structs
+
+Processor
+-> lapic id
+-> current page map?
+
+how to make interrupts work?
+
+allocation bitmap
+
+
+scheduler?
+
+Task
+-> name
+-> tid
+-> pid
+-> 1K area for whatever stuff saved?
+-> quanta in milliseconds, counts down?
+
+hash table of tasks?
+
+lottery scheduling?
+
+Scheduler
+-> task hash table
+-> cached task ids for the running tasks
+-> lottery ticket queue, random tickets are submitted constantly
+
+how should the VFS work?
+
+Mount
+-> open(path): Opens file?
+-> flush(): Flushes cache if there is one?
+-> unmount(): Unmounts, uninitializes?
+-> type: ext2, ext4, idk
+-> name: C for root? D? U0 for USB? idk
+-> lock: A lock for the mount?
+
+Paths?
+
+C::/Home/Test.txt?
+
+VFS
+-> file hash table?
+-> mount hash table?
+-> primary mount, root?
+
+Timer?
+
+Should the timer be a device or should it have its own functions?
+
+timer_dev->register_handler();
+
+TimerRegisterHandler?
+
+having it as a device looks better
+
+
+VMM / PMM design?
+
+PMM should just be a bitmap allocator?
+
+VMM should use rb trees
+
+Memory model?
+
+FFFF800000000000 <-> FFFF810000000000 | Physical mappings
+
+FFFF820000000000 <-> FFFF830000000000 | Kernel heap
+
+FFFFFFFF80000000 <-> FFFFFFFFFFFFFFFF | Kernel mappings
+
+

@@ -1,0 +1,45 @@
+if(!(argc - 2)) {
+	if(arg1 / "clean") {
+		$"rm -f ../bin/*.o";
+		$"rm -f ../env/*.bin";
+		$"rm -f ../env/*.img";
+		#exit;
+	} else {
+		$"echo Undefined rule " + arg1 &;
+		#exit;
+	}
+}
+
+let avx512 = "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -mno-80387";
+
+let cc      = "clang";
+let arch    = "--target=x86_64-pc-none-elf";
+let cflags  = arch + " -Wall -Wextra -g -O2 -ffreestanding -pipe -IInclude -fno-pic " +
+				"-fno-stack-protector -mno-red-zone -mcmodel=kernel " + avx512;
+
+let ldflags = arch + " -fno-pic -static -nostdlib -TLinker.ld " +
+				"-z max-page-size=0x1000 -mcmodel=kernel";
+
+let status = 0;
+
+let num = 0;
+
+#foreach("c")
+{
+	let fname = dir + "/" + file;
+
+	status = status +
+	($cc + " -c " + fname + " " + cflags + " -o ../bin/" + (file - 2) + num + ".o");
+	$"echo " &;
+
+	num = num + 1;
+}
+
+if(status) {
+	$"echo Couldnt compile all of the files, aborting." &;
+} else {
+	$cc + " " + ldflags + " ../bin/*.o -o ../env/shitos4.bin";
+	$"echo " &;
+}
+
+$"rm -f ../bin/*.o";
