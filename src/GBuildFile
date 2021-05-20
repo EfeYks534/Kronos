@@ -13,8 +13,8 @@ let avx512 = "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -mno-80387";
 
 let cc      = "clang";
 let arch    = "--target=x86_64-pc-none-elf";
-let cflags  = arch + " -Wall -Wextra -g -O2 -ffreestanding -pipe -IInclude -fno-pic " +
-				"-fno-stack-protector -mno-red-zone -mcmodel=kernel " + avx512;
+let cflags  = arch + " -Wall -g -O2 -ffreestanding -pipe -fno-pic -IInclude " +
+				"-ILibK -fno-stack-protector -mno-red-zone -mcmodel=kernel " + avx512;
 
 let ldflags = arch + " -fno-pic -static -nostdlib -TLinker.ld " +
 				"-z max-page-size=0x1000 -mcmodel=kernel";

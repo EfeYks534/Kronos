@@ -1,7 +1,9 @@
 #include <Common.h>
 #include <Stivale2.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 static uint8_t stack[16384] = { 0 }; // 16K is enough for our stack
 
@@ -13,10 +15,18 @@ static struct stivale2_header_tag_terminal term_tag = {
 	.flags = 0
 };
 
+static struct stivale2_header_tag_smp smp_tag = {
+	.tag = {
+		.identifier = STIVALE2_HEADER_TAG_SMP_ID,
+		.next       = (uintptr_t) &term_tag,
+	},
+	.flags = 0
+};
+
 static struct stivale2_header_tag_framebuffer fb_tag = {
 	.tag = {
 		.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
-		.next       = (uintptr_t) &term_tag,
+		.next       = (uintptr_t) &smp_tag,
 	},
 
 	.framebuffer_width  = 0,
@@ -34,15 +44,15 @@ static struct stivale2_header stivale_hdr = {
 
 void KernelBoot(struct stivale2_struct *stivale)
 {
-	struct stivale2_struct_tag_terminal *terminal;
-	terminal = Stivale2GetTag(stivale, STIVALE2_STRUCT_TAG_TERMINAL_ID);
+	Stivale2SetStruct(stivale);
 
-	if(terminal == NULL)
-		Halt();
+	struct stivale2_struct_tag_smp *smp;
+	smp = Stivale2GetTag(STIVALE2_STRUCT_TAG_SMP_ID);
 
-	void (*term_write)(const char *str, size_t len) = (void*) terminal->term_write;
+	if(smp == NULL)
+		Panic(NULL, "Shitos4 doesn't support non-SMP systems");
 
-	term_write("Hello, world!\n", 14);
+	
 
 	Halt();
 }
