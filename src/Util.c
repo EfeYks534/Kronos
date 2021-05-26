@@ -17,6 +17,8 @@ struct StackFrame
 
 void Panic(struct Registers *r, const char *fmt, ...)
 {
+	asm volatile("cli");
+
 	Log("\x1B[31;1m\n\nKernel Panic: \x1B[35;1m");
 
 	va_list ap;
@@ -31,10 +33,12 @@ void Panic(struct Registers *r, const char *fmt, ...)
 
 	struct StackFrame *frame = NULL;
 
-	if(r != NULL)
+	if(r != NULL) {
 		frame = (struct StackFrame*) r->rbp;
-	else
-		asm volatile("movq %%rbp, %0" : "=r"(frame):);
+		Log("    \x1B[32m0x%xl\n", r->rip);
+	} else {
+		asm volatile("movq %%rbp, %0" : "=r"(frame));
+	}
 
 
 	size_t depth = 16;
@@ -45,7 +49,7 @@ void Panic(struct Registers *r, const char *fmt, ...)
 	}
 
 	if(r != NULL) {
-		Log("\x1B[37m");
+		Log("\x1B[90m\n");
 		Log("FLAGS: %xl RIP: %xl CS: %xl SS: %xl\n\n", r->flags, r->rip, r->cs, r->ss);
 
 		Log("RAX: %xl RBX: %xl RCX: %xl RDX: %xl\n", r->rax, r->rbx, r->rcx, r->rdx);
@@ -69,15 +73,53 @@ void Log(const char *fmt, ...)
 	va_end(ap);
 
 	SerialWrite(SERIAL_COM1, log_buffer, len);
-
-	struct stivale2_struct_tag_terminal *term;
-	term = Stivale2GetTag(STIVALE2_STRUCT_TAG_TERMINAL_ID);
-	if(term != NULL) {
-		void (*term_write)(const char *str, size_t len) = (void*) term->term_write;
-
-		term_write(log_buffer, len);
-	}
 }
+
+void Info(const char *fmt, ...)
+{
+	Log("\x1B[32;1m[INFO]\x1B[0m ");
+
+	va_list ap;
+
+	va_start(ap, fmt);
+
+	int len = vsnprintf(log_buffer, 4096, fmt, ap);
+
+	va_end(ap);
+
+	SerialWrite(SERIAL_COM1, log_buffer, len);
+}
+
+void Warn(const char *fmt, ...)
+{
+	Log("\x1B[33;1m[WARNING]\x1B[0m ");
+
+	va_list ap;
+
+	va_start(ap, fmt);
+
+	int len = vsnprintf(log_buffer, 4096, fmt, ap);
+
+	va_end(ap);
+
+	SerialWrite(SERIAL_COM1, log_buffer, len);
+}
+
+void Error(const char *fmt, ...)
+{
+	Log("\x1B[31;1m[ERROR]\x1B[0m ");
+
+	va_list ap;
+
+	va_start(ap, fmt);
+
+	int len = vsnprintf(log_buffer, 4096, fmt, ap);
+
+	va_end(ap);
+
+	SerialWrite(SERIAL_COM1, log_buffer, len);
+}
+
 
 void Out8(uint16_t port, uint8_t data)
 {

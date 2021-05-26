@@ -7,18 +7,16 @@
 
 static uint8_t stack[16384] = { 0 }; // 16K is enough for our stack
 
-static struct stivale2_header_tag_terminal term_tag = {
-	.tag = {
-		.identifier = STIVALE2_HEADER_TAG_TERMINAL_ID,
-		.next       = 0
-	},
-	.flags = 0
+static struct stivale2_tag unmap_null_tag = {
+	.identifier = STIVALE2_HEADER_TAG_UNMAP_NULL_ID,
+	.next       = 0,
 };
+
 
 static struct stivale2_header_tag_smp smp_tag = {
 	.tag = {
 		.identifier = STIVALE2_HEADER_TAG_SMP_ID,
-		.next       = (uintptr_t) &term_tag,
+		.next       = (uintptr_t) &unmap_null_tag,
 	},
 	.flags = 0
 };
@@ -52,7 +50,11 @@ void KernelBoot(struct stivale2_struct *stivale)
 	if(smp == NULL)
 		Panic(NULL, "Shitos4 doesn't support non-SMP systems");
 
-	
+	Log("\n\n");
+
+	KernelMain();
+
+	Log("\n\n");
 
 	Halt();
 }

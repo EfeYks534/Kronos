@@ -252,4 +252,6 @@ void Stivale2SetStruct(struct stivale2_struct *stivale2);
 
 void *Stivale2GetTag(uint64_t id);
 
+struct stivale2_module *Stivale2GetModule(const char *name);
+
 #endif

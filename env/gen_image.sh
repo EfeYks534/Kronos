@@ -22,7 +22,7 @@ sudo cp limine.cfg  ./mount/boot/limine.cfg
 
 sudo cp ./limine/limine.sys ./mount/boot/limine.sys
 
-sudo umount $LOOPPART
+sudo umount ./mount
 
 sudo losetup --detach $LOOPDEV
 

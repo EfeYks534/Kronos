@@ -3,21 +3,28 @@ if(!(argc - 2)) {
 		$"rm -f ../bin/*.o";
 		$"rm -f ../env/*.bin";
 		$"rm -f ../env/*.img";
-		#exit;
+		#exit 0;
 	}
 	$"echo Undefined rule " + arg1 &;
-	#exit;
+	#exit 1;
 }
 
 let avx512 = "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -mno-80387";
 
 let cc      = "clang";
 let arch    = "--target=x86_64-pc-none-elf";
-let cflags  = arch + " -Wall -g -O2 -ffreestanding -pipe -fno-pic -IInclude " +
+let warn    = "-Wall -Wno-unused-variable -Wno-unused-function";
+let cflags  = arch + " " + warn + " -g -O2 -ffreestanding -pipe -fno-pic -IInclude " +
 				"-ILibK -fno-stack-protector -mno-red-zone -mcmodel=kernel " + avx512;
 
 let ldflags = arch + " -fno-pic -static -nostdlib -TLinker.ld " +
 				"-z max-page-size=0x1000 -mcmodel=kernel";
+
+let as = "nasm";
+
+let asmflags = "-felf64";
+
+
 
 let status = 0;
 
@@ -34,11 +41,27 @@ let num = 0;
 	num = num + 1;
 }
 
+#foreach("asm")
+{
+	let fname = dir + "/" + file;
+
+	status = status +
+	($as + " " + fname + " -o ../bin/" + (file - 4) + num + ".o " + asmflags);
+
+	$"echo " &;
+
+	num = num + 1;
+}
+
 if(status) {
 	$"echo Couldnt compile all of the files, aborting." &;
+	$"rm -f ../bin/*.o";
+	#exit 1;
 } else {
 	$cc + " " + ldflags + " ../bin/*.o -o ../env/shitos4.bin";
 	$"echo " &;
 }
 
 $"rm -f ../bin/*.o";
+
+#exit 0;

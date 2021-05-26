@@ -1,5 +1,6 @@
-gbuild clean
-gbuild
+set -e
+gbuild clean 
+gbuild 
 
 cd ../env/
 

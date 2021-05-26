@@ -13,6 +13,12 @@
 
 #define PACKED __attribute__((packed))
 
+#define PHYS_OFFSET   0xFFFF800000000000
+
+#define KERNEL_OFFSET 0xFFFFFFFF80000000
+
+#define PhysOffset(x) ((void*) PhysOffseti((uintptr_t) x))
+
 struct Registers
 {
 	uint64_t r15;
@@ -41,10 +47,17 @@ struct Registers
 	uint64_t    ss;
 } PACKED;
 
+void KernelMain();
 
 void Panic(struct Registers *regs, const char *fmt, ...);
 
 void Log(const char *fmt, ...);
+
+void Info(const char *fmt, ...);
+
+void Warn(const char *fmt, ...);
+
+void Error(const char *fmt, ...);
 
 void Out8(uint16_t  port, uint8_t  data);
 void Out16(uint16_t port, uint16_t data);
@@ -55,3 +68,13 @@ uint16_t In16(uint16_t port);
 uint32_t In32(uint16_t port);
 
 void IOWait();
+
+static inline uintptr_t PhysOffseti(uintptr_t addr)
+{
+	return addr < PHYS_OFFSET ? addr + PHYS_OFFSET : addr;
+}
+
+static inline size_t ceil(size_t num, size_t div)
+{
+	return num / div + (num % div == 0 ? 0 : 1);
+}
