@@ -57,6 +57,9 @@ static uint64_t BitmapAlloc()
 static struct Page *PageAlloc()
 {
 	if(!QueueEmpty(&pgcache)) {
+
+		// Get a page from the cache
+
 		struct Page *page = NULL;
 
 		int res = QueueConsume(&pgcache, &page);
@@ -64,9 +67,10 @@ static struct Page *PageAlloc()
 		if(page != NULL && res)
 			return page;
 
-		if(!QueueEmpty(&pgcache))
-			Panic(NULL, "Page cache invalid");
+		Panic(NULL, "Page cache invalid");
 	}
+
+	// Cache miss, let's create pages ourselves
 
 	struct Page *pages = PhysOffset(BitmapAlloc());
 
@@ -74,7 +78,8 @@ static struct Page *PageAlloc()
 		struct Page *item = &pages[i];
 		int r = QueueSubmit(&pgcache, &item);
 
-		if(!r) Warn("Page leak caused by full cache\n");
+		if(!r)
+			Panic(NULL, "Page cache invalid");
 	}
 
 	return &pages[0];
@@ -93,6 +98,8 @@ void PMInit()
 	if(memmap == NULL)
 		Panic(NULL, "Couldn't load Stivale 2 memory map");
 
+	// Initialize the SMInfo fields
+
 	for(size_t i = 0; i < memmap->entries; i++) {
 		struct stivale2_mmap_entry *ent = &memmap->memmap[i];
 		sm_info.pm_total += ent->length;
@@ -103,6 +110,8 @@ void PMInit()
 		if(ent->type == STIVALE2_MMAP_USABLE)
 			sm_info.pm_usable += ent->length;
 	}
+
+	// Allocate bitmap
 
 	size_t bitmap_size = sm_info.pm_total / 4096 / 8;
 
@@ -126,6 +135,8 @@ void PMInit()
 		Panic(NULL, "Couldn't allocate physical memory bitmap");
 
 	memset(pmmap, 0, bitmap_size);
+
+	// Mark usable entries as free
 
 	for(size_t i = 0; i < memmap->entries; i++) {
 		struct stivale2_mmap_entry *ent = &memmap->memmap[i];
@@ -220,7 +231,7 @@ void PMFreePage(struct Page *page)
 		page->addr = 0;
 		page->refc = 0;
 
-		if(!QueueFull(&pgcache))
+		if(!QueueFull(&pgcache)) // Let's put it back on the cache
 			QueueSubmit(&pgcache, &page);
 	}
 }
