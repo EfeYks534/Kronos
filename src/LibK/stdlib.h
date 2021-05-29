@@ -14,6 +14,39 @@ struct Queue
 	int64_t  lock;
 };
 
+
+struct Stack
+{
+	void  *items;
+	size_t nmemb;
+	size_t  size;
+	size_t count;
+	int64_t lock;
+};
+
+static inline int StackFull(struct Stack *s)
+{
+	Lock(&s->lock);
+	int r = s->count == s->nmemb;
+	Unlock(&s->lock);
+
+	return r;
+}
+
+static inline int StackEmpty(struct Stack *s)
+{
+	Lock(&s->lock);
+	int r = s->count == 0;
+	Unlock(&s->lock);
+
+	return r;
+}
+
+int StackPush(struct Stack *s, void *item);
+
+int StackPop(struct Stack *s, void *item);
+
+
 static inline int QueueFull(struct Queue *q)
 {
 	Lock(&q->lock);
@@ -35,3 +68,4 @@ static inline int QueueEmpty(struct Queue *q)
 int QueueSubmit(struct Queue *q, void *item);
 
 int QueueConsume(struct Queue *q, void *item);
+

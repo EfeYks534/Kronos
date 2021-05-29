@@ -27,21 +27,8 @@ void KernelMain()
 	Info("Total usable : %l MiBs\n", sm_info->pm_usable / 1024 / 1024);
 	Info("Total used   : %l MiBs\n", sm_info->pm_used   / 1024 / 1024);
 
-	uint64_t addr[512] = { 0 };
-
-	for(int i = 0; i < 512; i++)
-		addr[i] = PMAlloc();
-
-	Info("Allocated 2 megs\n");
-
-	Info("Total memory : %l MiBs\n", sm_info->pm_total  / 1024 / 1024);
-	Info("Total usable : %l MiBs\n", sm_info->pm_usable / 1024 / 1024);
-	Info("Total used   : %l MiBs\n", sm_info->pm_used   / 1024 / 1024);
-
-	for(int i = 0; i < 512; i++)
-		PMFree(addr[i]);
-
-	Info("Deallocated 2 megs\n");
+	for(int i = 0; i < 524288; i++)
+		PMAlloc();
 
 	Info("Total memory : %l MiBs\n", sm_info->pm_total  / 1024 / 1024);
 	Info("Total usable : %l MiBs\n", sm_info->pm_usable / 1024 / 1024);

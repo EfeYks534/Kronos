@@ -153,9 +153,21 @@ int vsnprintf(char *str, int len, const char *fmt, va_list ap)
 			case 's': {
 				char *str1 = va_arg(ap, char*);
 
+				if(str1 == NULL) {
+					putchar('(');
+					putchar('n');
+					putchar('u');
+					putchar('l');
+					putchar('l');
+					putchar(')');
+					break;
+				}
+
+
 				int j = 0;
 				while(str1[j] != 0)
 					putchar(str1[j++]);
+
 				break;
 			  }
 			case 'c': {

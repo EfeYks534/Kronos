@@ -14,7 +14,7 @@ let avx512 = "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -mno-80387";
 let cc      = "clang";
 let arch    = "--target=x86_64-pc-none-elf";
 let warn    = "-Wall -Wno-unused-variable -Wno-unused-function";
-let cflags  = arch + " " + warn + " -g -O2 -ffreestanding -pipe -fno-pic -IInclude " +
+let cflags  = arch + " " + warn + " -g -O3 -ffreestanding -pipe -fno-pic -IInclude " +
 				"-ILibK -fno-stack-protector -mno-red-zone -mcmodel=kernel " + avx512;
 
 let ldflags = arch + " -fno-pic -static -nostdlib -TLinker.ld " +

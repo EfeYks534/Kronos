@@ -31,7 +31,7 @@ void *memset(void *str, int c, size_t n)
 
 	char *s = str;
 
-	while(--n)
+	while(n--)
 		*s++ = c;
 
 	return str;

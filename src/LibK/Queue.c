@@ -5,7 +5,7 @@ int QueueSubmit(struct Queue *q, void *item)
 {
 	Lock(&q->lock);
 
-	if(QueueFull(q)) {
+	if(q->head == (q->tail + 1) % q->nmemb) {
 		Unlock(&q->lock);
 		return 0;
 	}
@@ -25,7 +25,7 @@ int QueueConsume(struct Queue *q, void *item)
 {
 	Lock(&q->lock);
 
-	if(QueueEmpty(q)) {
+	if(q->head == q->tail) {
 		Unlock(&q->lock);
 		return 0;
 	}
