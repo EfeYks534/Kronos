@@ -83,7 +83,7 @@ static int VSerialReady(struct DevSerial *dev)
 
 static struct DevSerial srcom1 = { 0 };
 
-void KEINIT VSerialInit()
+static void KEINIT VSerialInit()
 {
 	memcpy(srcom1.dev.name, "Serial(COM1)", strlen("Serial(COM1)"));
 

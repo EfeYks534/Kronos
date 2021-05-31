@@ -10,8 +10,17 @@ static void PrintBuffer(void *buf, size_t len)
 	struct DevSerial *sr;
 	sr = DeviceGet(DEV_CATEGORY_DATA, DEV_TYPE_DTSERIAL, "Serial(COM1)");
 
+	struct DevTerminal *term;
+	term = DeviceGet(DEV_CATEGORY_TERM, DEV_TYPE_GRTERM, "Terminal");
+
+	uint8_t *b = buf;
+	b[len] = 0;
+
 	if(sr != NULL)
 		sr->write(sr, buf, len);
+
+	if(term != NULL)
+		term->write(term, buf);
 }
 
 
@@ -28,6 +37,11 @@ struct StackFrame
 void Panic(struct Registers *r, const char *fmt, ...)
 {
 	asm volatile("cli");
+static int panic = 0;
+
+	if(panic)
+		Halt();
+	panic = 1;
 
 	Log("\x1B[31;1m\n\nKernel Panic: \x1B[35;1m");
 

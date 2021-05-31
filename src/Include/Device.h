@@ -25,13 +25,12 @@ struct DevTerminal
 {
 	struct Device dev;
 
-	uint32_t  *fb;
-	size_t column;
-	size_t   line;
+	uint32_t   *fb;
+	size_t  column;
+	size_t    line;
+	void    *state;
 
 	void  (*write) (struct DevTerminal*, const char*);
-	void  (*clear) (struct DevTerminal*, char);
-	void  (*flush) (struct DevTerminal*);
 };
 
 struct DevSerial
