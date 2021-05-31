@@ -12,6 +12,21 @@ SECTIONS
 	    *(.text*)
 	}
 
+	.ctors : {
+		keinit_begin = .;
+
+		*(.ctors.65535)
+
+		keinit_end = .;
+
+		klinit_begin = .;
+
+		*(.ctors.65534)
+
+		klinit_end = .;
+
+	}
+
 	.rodata : {
 	    *(.rodata*)
 	}

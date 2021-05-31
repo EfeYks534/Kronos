@@ -19,6 +19,10 @@
 
 #define PhysOffset(x) ((void*) PhysOffseti((uintptr_t) x))
 
+#define KEINIT __attribute__((constructor(0), used, noinline))
+
+#define KLINIT __attribute__((constructor(1), used, noinline))
+
 struct Registers
 {
 	uint64_t r15;
@@ -46,6 +50,10 @@ struct Registers
 	uint64_t   rsp;
 	uint64_t    ss;
 } PACKED;
+
+void KernelEarlyInit();
+
+void KernelLateInit();
 
 void KernelMain();
 

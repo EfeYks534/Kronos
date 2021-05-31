@@ -1,9 +1,19 @@
 #include <Common.h>
-#include <Serial.h>
+#include <Device.h>
 #include <Stivale2.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+
+static void PrintBuffer(void *buf, size_t len)
+{
+	struct DevSerial *sr;
+	sr = DeviceGet(DEV_CATEGORY_DATA, DEV_TYPE_DTSERIAL, "Serial(COM1)");
+
+	if(sr != NULL)
+		sr->write(sr, buf, len);
+}
+
 
 static char log_buffer[4096] = { 0 };
 
@@ -72,7 +82,7 @@ void Log(const char *fmt, ...)
 
 	va_end(ap);
 
-	SerialWrite(SERIAL_COM1, log_buffer, len);
+	PrintBuffer(log_buffer, len);
 }
 
 void Info(const char *fmt, ...)
@@ -87,7 +97,7 @@ void Info(const char *fmt, ...)
 
 	va_end(ap);
 
-	SerialWrite(SERIAL_COM1, log_buffer, len);
+	PrintBuffer(log_buffer, len);
 }
 
 void Warn(const char *fmt, ...)
@@ -102,7 +112,7 @@ void Warn(const char *fmt, ...)
 
 	va_end(ap);
 
-	SerialWrite(SERIAL_COM1, log_buffer, len);
+	PrintBuffer(log_buffer, len);
 }
 
 void Error(const char *fmt, ...)
@@ -117,7 +127,7 @@ void Error(const char *fmt, ...)
 
 	va_end(ap);
 
-	SerialWrite(SERIAL_COM1, log_buffer, len);
+	PrintBuffer(log_buffer, len);
 }
 
 
