@@ -23,9 +23,6 @@ static uint64_t *pmmap = NULL; // PM allocation bitmap
 static uint64_t pmtab[512] = { 0 }; // struct Page maps
 
 
-static int64_t pmlock = 0;
-
-
 static void BICacheFill()
 {
 	size_t bitmap_size = sm_info.pm_total / 4096 / 64;
@@ -200,18 +197,18 @@ static uint64_t *PMNextLevel(uint64_t *cur, uint64_t ent)
 
 uint64_t PMAlloc()
 {
-	Lock(&pmlock);
+	Lock(&sm_info.lock);
 
 	uint64_t addr = PMAllocPage()->addr;
 
-	Unlock(&pmlock);
+	Unlock(&sm_info.lock);
 
 	return addr;
 }
 
 struct Page *PMAllocPage()
 {
-	Lock(&pmlock);
+	Lock(&sm_info.lock);
 
 	struct Page *pg = PageAlloc();
 
@@ -231,13 +228,13 @@ struct Page *PMAllocPage()
 
 	pm1[lvl1] = (uintptr_t) pg | 1;
 
-	Unlock(&pmlock);
+	Unlock(&sm_info.lock);
 	return pg;
 }
 
 struct Page *PMPageOf(uint64_t addr)
 {
-	Lock(&pmlock);
+	Lock(&sm_info.lock);
 
 	size_t lvl4 = (addr >> 39) & 0x1FF;
 	size_t lvl3 = (addr >> 30) & 0x1FF;
@@ -249,17 +246,17 @@ struct Page *PMPageOf(uint64_t addr)
 	uint64_t *pm1 = PMNextLevel(pm2, lvl2);
 
 	if(pm1[lvl1] & 1) {
-		Unlock(&pmlock);
+		Unlock(&sm_info.lock);
 		return (struct Page*) (pm1[lvl1] & ~1);
 	}
 
-	Unlock(&pmlock);
+	Unlock(&sm_info.lock);
 	return NULL;
 }
 
 void PMFree(uint64_t addr)
 {
-	Lock(&pmlock);
+	Lock(&sm_info.lock);
 
 	struct Page *pg = PMPageOf(addr);
 
@@ -268,12 +265,12 @@ void PMFree(uint64_t addr)
 
 	PMFreePage(pg);
 
-	Unlock(&pmlock);
+	Unlock(&sm_info.lock);
 }
 
 void PMFreePage(struct Page *page)
 {
-	Lock(&pmlock);
+	Lock(&sm_info.lock);
 
 	if(--page->refc == 0) {
 		BitmapFree(page->addr);
@@ -284,5 +281,5 @@ void PMFreePage(struct Page *page)
 		QueueSubmit(&pgcache, &page); // Let's put it back on the cache
 	}
 
-	Unlock(&pmlock);
+	Unlock(&sm_info.lock);
 }
