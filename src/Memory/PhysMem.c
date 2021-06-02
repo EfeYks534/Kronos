@@ -8,9 +8,9 @@
 static struct SMInfo sm_info = { 0 };
 
 
-static struct Page *pgcache_tab[2048] = { 0 }; // struct Page cache
+static struct Page **pgcache_tab = NULL; // struct Page cache
 
-static struct Queue pgcache = { .items = pgcache_tab, .nmemb = 2048, .size = 8, 0,0,0};
+static struct Queue pgcache = { .items = NULL, .nmemb = 0, .size = 8, 0,0,0};
 
 
 static uint64_t bicache_tab[2048] = { 0 }; // PM allocation bitmap index cache
@@ -133,12 +133,19 @@ void PMInit()
 			sm_info.pm_usable += ent->length;
 	}
 
-	// Allocate the allocation bitmap
+	// Allocate the allocation bitmap and the struct Page cache
 
 	size_t bitmap_size = sm_info.pm_total / 4096 / 8;
 
 	sm_info.pm_used   += bitmap_size;
 	sm_info.pm_usable -= bitmap_size;
+
+	size_t spage_size = sm_info.pm_total / 4096 * 8;
+
+	sm_info.pm_used   += spage_size;
+	sm_info.pm_usable -= spage_size;
+
+	pgcache.nmemb = sm_info.pm_total / 4096;
 
 	for(size_t i = 0; i < memmap->entries; i++) {
 		struct stivale2_mmap_entry *ent = &memmap->memmap[i];
@@ -153,10 +160,26 @@ void PMInit()
 		}
 	}
 
-	if(pmmap == NULL)
-		Panic(NULL, "Couldn't allocate memory allocation bitmap");
+	for(size_t i = 0; i < memmap->entries; i++) {
+		struct stivale2_mmap_entry *ent = &memmap->memmap[i];
+
+		if(ent->type == STIVALE2_MMAP_USABLE && ent->length >= spage_size) {
+			pgcache_tab = PhysOffset(ent->base);
+
+			ent->length -= spage_size;
+			ent->base   += spage_size;
+			break;
+		}
+	}
+
+	if(pmmap == NULL || pgcache_tab == NULL)
+		Panic(NULL, "Couldn't allocate enough memory for PMM");
+
+	pgcache.items = pgcache_tab;
 
 	memset(pmmap, 0, bitmap_size);
+
+	
 
 	// Let's mark the usable entries as free
 
