@@ -210,7 +210,7 @@ static uint64_t *PMNextLevel(uint64_t *cur, uint64_t ent)
 
 		cur[ent] = addr | 1;
 
-		memset((void*) addr, 0, 4096);
+		memset(PhysOffset(addr), 0, 4096);
 
 		return (uint64_t*) addr;
 	}

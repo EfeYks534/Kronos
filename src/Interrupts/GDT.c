@@ -23,6 +23,9 @@ void GDTEntryNew(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
 
 	ent->limit_low   = (limit & 0x0000FFFF);
 	ent->limit_upper = (limit & 0x000F0000) >> 16;
+
+	gdt_ptr.addr = (uintptr_t) gdt_entries;
+	gdt_ptr.size = sizeof(struct GDTEntry) * gdt_entry_count - 1;
 }
 
 void GDTClean()
@@ -36,9 +39,6 @@ void GDTFlush(void *ptr);
 
 void GDTInstall()
 {
-	gdt_ptr.addr = (uintptr_t) gdt_entries;
-	gdt_ptr.size = sizeof(struct GDTEntry) * gdt_entry_count - 1;
-
 	GDTFlush(&gdt_ptr);
 }
 

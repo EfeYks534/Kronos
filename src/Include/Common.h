@@ -17,7 +17,7 @@
 
 #define KERNEL_OFFSET 0xFFFFFFFF80000000
 
-#define PhysOffset(x) ((void*) PhysOffseti((uintptr_t) x))
+#define PhysOffset(x) ((void*) PhysOffseti((uintptr_t) (x)))
 
 #define KEINIT __attribute__((constructor(0), used, noinline))
 
@@ -50,6 +50,20 @@ struct Registers
 	uint64_t   rsp;
 	uint64_t    ss;
 } PACKED;
+
+struct CPUID
+{
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
+	uint32_t d;
+} PACKED;
+
+
+struct CPUID CPUID(uint32_t func);
+
+uint64_t FlagsGet();
+
 
 void KernelEarlyInit();
 

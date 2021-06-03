@@ -145,6 +145,26 @@ void Error(const char *fmt, ...)
 }
 
 
+struct CPUID CPUID(uint32_t func)
+{
+	struct CPUID id = (struct CPUID) { 0 };
+
+	asm volatile("cpuid" : "=a"(id.a), "=b"(id.b), "=c"(id.c), "=d"(id.d) : "a"(func), "c"(0));
+
+	return id;
+}
+
+uint64_t FlagsGet()
+{
+	uint64_t flags = 0;
+
+	asm volatile("pushfq\n"
+	             "pop %0" : "=a"(flags) :: "memory");
+
+	return flags;
+}
+
+
 void Out8(uint16_t port, uint8_t data)
 {
 	asm volatile("outb %0, %1" ::"a"(data), "Nd"(port));
