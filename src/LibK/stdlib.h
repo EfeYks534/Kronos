@@ -69,3 +69,9 @@ int QueueSubmit(struct Queue *q, void *item);
 
 int QueueConsume(struct Queue *q, void *item);
 
+
+void *malloc(size_t n);
+
+void *calloc(size_t nmemb, size_t size);
+
+void free(void *ptr);

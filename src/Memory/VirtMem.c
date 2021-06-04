@@ -25,6 +25,12 @@ void VMInit()
 	kspace.ptab = sm_info->ptab;
 	ProcCurrent()->space = &kspace;
 
+	uint64_t *ph = PhysOffset(sm_info->ptab);
+	for(int i = 256; i < 512; i++) {
+
+		ph[i] = PMAlloc() | PAGE_PRESENT | PAGE_RDWR;
+	}
+
 
 	for(uintptr_t phys = 0; phys < sm_info->pm_total; phys += 4096)
 		MMap(PhysOffset(phys), (void*) phys, PAGE_PRESENT | PAGE_RDWR);
@@ -266,4 +272,9 @@ retu:
 err:
 	ret = NULL;
 	goto retu;
+}
+
+struct AddressSpace *MKernel()
+{
+	return &kspace;
 }

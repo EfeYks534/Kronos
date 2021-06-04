@@ -10,22 +10,41 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void APMain()
+{
+	GDTInstall();
+	IDTInstall();
+
+	MSwitch(MKernel());
+
+	struct SMInfo *sm_info = SysMemInfo();
+
+	Info("Total memory   : %l KiBs\n", sm_info->pm_total  / 1024);
+	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable / 1024);
+	Info("Used memory    : %l KiBs\n", sm_info->pm_used   / 1024);
+	Info("Virtual memory : %l KiBs\n", sm_info->vm_total  * 4096 / 1024);
+
+	Halt();
+}
+
 void KernelMain()
 {
 	GDTLoad();
 	IDTLoad();
 
-	PMInit();
-	VMInit();
+	struct SMInfo *sm_info = SysMemInfo();
 
 	KernelEarlyInit();
 
-	struct SMInfo *sm_info = SysMemInfo();
+	PMInit();
+	VMInit();
 
-	Info("Total memory   : %l MiBs\n", sm_info->pm_total  / 1024 / 1024);
-	Info("Usable memory  : %l MiBs\n", sm_info->pm_usable / 1024 / 1024);
-	Info("Used memory    : %l MiBs\n", sm_info->pm_used   / 1024 / 1024);
 
-	Info("Virtual memory : %l KiBs\n", sm_info->vm_total * 4096 / 1024);
+	Info("Total memory   : %l KiBs\n", sm_info->pm_total  / 1024);
+	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable / 1024);
+	Info("Used memory    : %l KiBs\n", sm_info->pm_used   / 1024);
+	Info("Virtual memory : %l KiBs\n", sm_info->vm_total  * 4096 / 1024);
 
+	struct stivale2_struct_tag_smp *smp;
+	smp = Stivale2GetTag(STIVALE2_STRUCT_TAG_SMP_ID);
 }

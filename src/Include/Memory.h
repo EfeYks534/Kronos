@@ -38,7 +38,7 @@ struct AddressSpace
 
 struct Page
 {
-	uint64_t  addr : 56; // Physical address of the page / 4096
+	uint64_t  addr : 56; // Physical address of the page
 	uint64_t flags : 8;  // Flags of this page
 	size_t    refc;      // Reference count, how many times this page has been mapped
 	                     // `refc` only counts pages allocated with the PMAlloc() fa-
@@ -55,6 +55,8 @@ _Static_assert(sizeof(struct Page) == 16, "struct Page broken");
 void VMInit();
 
 void MSwitch(struct AddressSpace *space);
+
+struct AddressSpace *MKernel();
 
 struct AddressSpace *MActive();
 

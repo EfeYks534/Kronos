@@ -100,3 +100,8 @@ static inline size_t ceil(size_t num, size_t div)
 {
 	return num / div + (num % div == 0 ? 0 : 1);
 }
+
+static inline size_t log2(size_t num)
+{
+	return num == 0 ? 0 : 63 - __builtin_clzll(num);
+}

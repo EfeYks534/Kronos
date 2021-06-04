@@ -58,7 +58,7 @@ if(status) {
 	$"rm -f ../bin/*.o";
 	#exit 1;
 } else {
-	$cc + " " + ldflags + " ../bin/*.o -o ../env/shitos4.bin";
+	$cc + " " + ldflags + " ../bin/*.o -o ../env/kronos.bin";
 	$"echo " &;
 }
 

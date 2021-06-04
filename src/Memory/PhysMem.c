@@ -206,13 +206,13 @@ static uint64_t *PMNextLevel(uint64_t *cur, uint64_t ent)
 	cur = (uint64_t*) ((uintptr_t) cur & ~1);
 
 	if((cur[ent] & 1) == 0) {
-		uint64_t addr = BitmapAlloc();
+		uint64_t *addr = PhysOffset(BitmapAlloc());
 
-		cur[ent] = addr | 1;
+		cur[ent] = (uintptr_t) addr | 1;
 
-		memset(PhysOffset(addr), 0, 4096);
+		memset(addr, 0, 4096);
 
-		return (uint64_t*) addr;
+		return addr;
 	}
 
 	return (uint64_t*) (cur[ent] & ~1);
