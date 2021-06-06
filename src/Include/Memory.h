@@ -77,10 +77,16 @@ struct SMInfo *SysMemInfo();
 
 uint64_t PMAlloc();
 
+struct Page *PMAllocPageLockless();
+
 struct Page *PMAllocPage();
+
+struct Page *PMPageOfLockless(uint64_t addr);
 
 struct Page *PMPageOf(uint64_t addr);
 
 void PMFree(uint64_t addr);
+
+void PMFreePageLockless(struct Page *page);
 
 void PMFreePage(struct Page *page);

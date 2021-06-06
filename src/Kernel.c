@@ -47,4 +47,13 @@ void KernelMain()
 
 	struct stivale2_struct_tag_smp *smp;
 	smp = Stivale2GetTag(STIVALE2_STRUCT_TAG_SMP_ID);
+
+
+	uint64_t shitpiss[100] = { 0 };
+
+	for(int i = 0; i < 100; i++)
+		shitpiss[i] = PMAlloc();
+
+	for(int i = 0; i < 100; i++)
+		PMFree(shitpiss[i]);
 }

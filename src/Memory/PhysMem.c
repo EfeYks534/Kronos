@@ -218,21 +218,8 @@ static uint64_t *PMNextLevel(uint64_t *cur, uint64_t ent)
 	return (uint64_t*) (cur[ent] & ~1);
 }
 
-uint64_t PMAlloc()
+struct Page *PMAllocPageLockless()
 {
-	Lock(&sm_info.lock);
-
-	uint64_t addr = PMAllocPage()->addr;
-
-	Unlock(&sm_info.lock);
-
-	return addr;
-}
-
-struct Page *PMAllocPage()
-{
-	Lock(&sm_info.lock);
-
 	struct Page *pg = PageAlloc();
 
 	pg->addr = BitmapAlloc();
@@ -250,15 +237,33 @@ struct Page *PMAllocPage()
 	uint64_t *pm1 = PMNextLevel(pm2, lvl2);
 
 	pm1[lvl1] = (uintptr_t) pg | 1;
-
-	Unlock(&sm_info.lock);
 	return pg;
 }
 
-struct Page *PMPageOf(uint64_t addr)
+struct Page *PMAllocPage()
 {
 	Lock(&sm_info.lock);
 
+	struct Page *ret = PMAllocPageLockless();
+
+	Unlock(&sm_info.lock);
+
+	return ret;
+}
+
+uint64_t PMAlloc()
+{
+	Lock(&sm_info.lock);
+
+	uint64_t addr = PMAllocPageLockless()->addr;
+
+	Unlock(&sm_info.lock);
+
+	return addr;
+}
+
+struct Page *PMPageOfLockless(uint64_t addr)
+{
 	size_t lvl4 = (addr >> 39) & 0x1FF;
 	size_t lvl3 = (addr >> 30) & 0x1FF;
 	size_t lvl2 = (addr >> 21) & 0x1FF;
@@ -268,33 +273,24 @@ struct Page *PMPageOf(uint64_t addr)
 	uint64_t *pm2 = PMNextLevel(pm3, lvl3);
 	uint64_t *pm1 = PMNextLevel(pm2, lvl2);
 
-	if(pm1[lvl1] & 1) {
-		Unlock(&sm_info.lock);
+	if(pm1[lvl1] & 1)
 		return (struct Page*) (pm1[lvl1] & ~1);
-	}
-
-	Unlock(&sm_info.lock);
 	return NULL;
 }
 
-void PMFree(uint64_t addr)
+struct Page *PMPageOf(uint64_t addr)
 {
 	Lock(&sm_info.lock);
 
-	struct Page *pg = PMPageOf(addr);
-
-	if(pg == NULL)
-		Panic(NULL, "Can't free unallocated page");
-
-	PMFreePage(pg);
+	struct Page *ret = PMPageOfLockless(addr);
 
 	Unlock(&sm_info.lock);
+
+	return ret;
 }
 
-void PMFreePage(struct Page *page)
+void PMFreePageLockless(struct Page *page)
 {
-	Lock(&sm_info.lock);
-
 	if(--page->refc == 0) {
 		BitmapFree(page->addr);
 
@@ -303,6 +299,28 @@ void PMFreePage(struct Page *page)
 
 		QueueSubmit(&pgcache, &page); // Let's put it back on the cache
 	}
+}
+
+void PMFreePage(struct Page *page)
+{
+	Lock(&sm_info.lock);
+
+	PMFreePageLockless(page);
+
+	Unlock(&sm_info.lock);
+}
+
+
+void PMFree(uint64_t addr)
+{
+	Lock(&sm_info.lock);
+
+	struct Page *pg = PMPageOfLockless(addr);
+
+	if(pg == NULL)
+		Panic(NULL, "Can't free unallocated page");
+
+	PMFreePageLockless(pg);
 
 	Unlock(&sm_info.lock);
 }

@@ -55,14 +55,13 @@ struct AddressSpace *MActive()
 	return ProcCurrent()->space;
 }
 
-
 static uint64_t *VMNextLevel(uint64_t *cur, uint64_t ent, uint16_t flags)
 {
 	if((cur[ent] & PAGE_PRESENT) == 0) {
 		if(flags == 0)
 			return NULL;
 
-		uint64_t addr = PMAlloc();
+		uint64_t addr = PMAllocPageLockless()->addr;
 
 		memset(PhysOffset(addr), 0, 4096);
 
