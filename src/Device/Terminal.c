@@ -399,6 +399,7 @@ static void TermWrite(struct DevTerminal *term, const char *str)
 
 				if(ch != ';' && ch != 'm') {
 					SrDebug("Got '%d', expected ';' or 'm'\n", ch);
+					Unlock(&term->dev.lock);
 					return;
 				}
 
@@ -408,6 +409,7 @@ static void TermWrite(struct DevTerminal *term, const char *str)
 
 			if(ch != 'm') {
 				SrDebug("Got '%d', expected 'm'\n", ch);
+				Unlock(&term->dev.lock);
 				return;
 			}
 
@@ -490,7 +492,7 @@ static struct TermState tstate = { BWHITE };
 
 static struct DevTerminal term = { 0 };
 
-static void KEINIT TermInit()
+static void KDINIT TermInit()
 {
 	struct stivale2_struct_tag_framebuffer *fb;
 	fb = Stivale2GetTag(STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);

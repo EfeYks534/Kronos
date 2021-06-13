@@ -4,6 +4,11 @@
 
 static struct stivale2_struct *stivale2 = NULL;
 
+struct stivale2_struct *Stivale2Struct()
+{
+	return stivale2;
+}
+
 void Stivale2SetStruct(struct stivale2_struct *s)
 {
 	stivale2 = s;

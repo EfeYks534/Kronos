@@ -150,6 +150,30 @@ int vsnprintf(char *str, int len, const char *fmt, va_list ap)
 
 				break;
 			  }
+			case 'u': {
+				uint64_t tmp = va_arg(ap, uint64_t);
+
+				if(tmp == 0) {
+					putchar('0');
+					break;
+				}
+
+				char buf[20] = { 0 };
+				int j = 0;
+
+				while(tmp != 0) {
+					int rem = tmp % 10;
+					buf[j++] = rem + '0';
+					tmp = tmp / 10;
+				}
+
+				j--;
+				while(j >= 0)
+					putchar(buf[j--]);
+
+				break;
+			  }
+
 			case 's': {
 				char *str1 = va_arg(ap, char*);
 

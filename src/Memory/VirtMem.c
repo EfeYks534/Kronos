@@ -73,6 +73,15 @@ static uint64_t *VMNextLevel(uint64_t *cur, uint64_t ent, uint16_t flags)
 	return PhysOffset(cur[ent] & ~0xFFF);
 }
 
+static void Invalidate(void *virt)
+{
+	uint64_t cr3 = 0;
+	asm volatile("mov %%cr3, %0" : "=a"(cr3));
+
+	if(cr3 == (uint64_t) MActive()->ptab)
+		asm volatile("invlpg %0" :: "m"(virt) : "memory");
+}
+
 void MMap(void *virt, void *phys, uint16_t flags)
 {
 	int high = (uintptr_t) virt >= PHYS_OFFSET;
@@ -98,7 +107,7 @@ void MMap(void *virt, void *phys, uint16_t flags)
 
 	pml1[lvl1] = (uintptr_t) phys | flags;
 
-	asm volatile("invlpg (%0)" : "=a"(virt));
+	Invalidate(virt);
 
 	if(flags & PAGE_PRESENT) {
 		if(high)
@@ -142,7 +151,7 @@ void MUnmap(void *virt)
 
 	pml1[lvl1] = 0;
 
-	asm volatile("invlpg (%0)" : "=a"(virt));
+	asm volatile("invlpg %0" :: "m"(virt) : "memory");
 
 	if(high && sm_info->vm_total > 0)
 		sm_info->vm_total--;
@@ -181,7 +190,7 @@ void MFlag(void *virt, uint16_t flags)
 
 	pml1[lvl1] = (pml1[lvl1] & ~0xFFF) | flags;
 
-	asm volatile("invlpg (%0)" : "=a"(virt));
+	asm volatile("invlpg %0" :: "m"(virt) : "memory");
 
 
 	if(high)

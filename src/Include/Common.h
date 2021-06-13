@@ -19,9 +19,11 @@
 
 #define PhysOffset(x) ((void*) PhysOffseti((uintptr_t) (x)))
 
-#define KEINIT __attribute__((constructor(0), used, noinline))
+#define KDINIT __attribute__((constructor(0), used, noinline))
 
-#define KLINIT __attribute__((constructor(1), used, noinline))
+#define KEINIT __attribute__((constructor(1), used, noinline))
+
+#define KLINIT __attribute__((constructor(2), used, noinline))
 
 struct Registers
 {
@@ -57,13 +59,16 @@ struct CPUID
 	uint32_t b;
 	uint32_t c;
 	uint32_t d;
-} PACKED;
+};
 
 
 struct CPUID CPUID(uint32_t func);
 
 uint64_t FlagsGet();
 
+void FlagsSet(uint64_t flags);
+
+void KernelDeviceInit();
 
 void KernelEarlyInit();
 

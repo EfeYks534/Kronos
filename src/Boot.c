@@ -35,7 +35,7 @@ static struct stivale2_header_tag_framebuffer fb_tag = {
 __attribute__((section(".stivale2hdr"), used))
 static struct stivale2_header stivale_hdr = {
 	.entry_point = 0,
-	.stack       = (uintptr_t) stack + sizeof(stack) - 1,
+	.stack       = (uintptr_t) stack + sizeof(stack),
 	.flags       = 2,
 	.tags        = (uintptr_t) &fb_tag
 };
@@ -50,11 +50,7 @@ void KernelBoot(struct stivale2_struct *stivale)
 	if(smp == NULL)
 		Panic(NULL, "Shitos4 doesn't support non-SMP systems");
 
-	Log("\n\n");
-
 	KernelMain();
-
-	Log("\n\n");
 
 	Halt();
 }

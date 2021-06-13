@@ -250,6 +250,8 @@ struct stivale2_struct_vmap {
 
 void Stivale2SetStruct(struct stivale2_struct *stivale2);
 
+struct stivale2_struct *Stivale2Struct();
+
 void *Stivale2GetTag(uint64_t id);
 
 struct stivale2_module *Stivale2GetModule(const char *name);
