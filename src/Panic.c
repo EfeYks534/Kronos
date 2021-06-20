@@ -23,6 +23,7 @@ void Panic(struct Registers *r, const char *fmt, ...)
 
 	if(panic)
 		Halt();
+
 	panic = 1;
 
 	Log("\x1B[31;1m\n\nKernel Panic: \x1B[35;1m");
@@ -57,7 +58,8 @@ void Panic(struct Registers *r, const char *fmt, ...)
 
 	if(r != NULL) {
 		Log("\x1B[90m\n");
-		Log("FLAGS: %xl RIP: %xl CS: %xl SS: %xl\n\n", r->flags, r->rip, r->cs, r->ss);
+		Log("FLAGS: %xl RIP: %xl CS: %xl SS: %xl\n", r->flags, r->rip, r->cs, r->ss);
+		Log("ERROR: %xl\n\n", r->error);
 
 		Log("RAX: %xl RBX: %xl RCX: %xl RDX: %xl\n", r->rax, r->rbx, r->rcx, r->rdx);
 		Log("RDI: %xl RSI: %xl RBP: %xl RSP: %xl\n", r->rdi, r->rsi, r->rbp, r->rsp);

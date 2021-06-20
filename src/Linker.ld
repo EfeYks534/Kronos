@@ -13,24 +13,17 @@ SECTIONS
 	}
 
 	.ctors : {
-		kdinit_begin = .;
-
-		*(.ctors.65535)
-
-		kdinit_end = .;
-
 		keinit_begin = .;
 
-		*(.ctors.65534)
+		*(.ctors.65535)
 
 		keinit_end = .;
 
 		klinit_begin = .;
 
-		*(.ctors.65533)
+		*(.ctors.65534)
 
 		klinit_end = .;
-
 	}
 
 	.rodata : {

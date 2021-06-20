@@ -1,4 +1,5 @@
 #include <Common.h>
+#include <Memory.h>
 #include <DescTabs.h>
 
 const char *exceptions[] =
@@ -30,13 +31,24 @@ const char *exceptions[] =
 static void ExceptionHandler(struct Registers *regs)
 {
 	uint64_t vector = regs->vector > 20 ? 21 : regs->vector;
+	uint64_t error  = regs->error;
 
 	uint64_t cr2 = 0;
 
 	asm volatile("mov %%cr2, %0" : "=r"(cr2));
 
-	if(vector == 0xE)
+	if(vector == 0xE) {
+		struct Page *pg = PMPageOf((uint64_t) MPhys((void*) cr2));
+
+		if(!(error & 1) && pg != NULL) {
+			if(pg->flags != 0) {
+				
+			}
+		}
+
 		Panic(regs, "Memory access violation while accessing %xl", cr2);
+	}
+
 	Panic(regs, "%s", exceptions[vector]);
 }
 

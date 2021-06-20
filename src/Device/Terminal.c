@@ -340,25 +340,6 @@ static int atoi(const char *str)
 	return num;
 }
 
-static void SrDebug(const char *fmt, ...)
-{
-static char log_buffer[4096] = { 0 };
-
-    va_list ap; 
-
-    va_start(ap, fmt);
-
-    int len = vsnprintf(log_buffer, 4095, fmt, ap);
-
-    va_end(ap);
-
-	struct DevSerial *sr;
-	sr = DeviceGet(DEV_CATEGORY_DATA, DEV_TYPE_DTSERIAL, "Serial(COM1)");
-
-	if(sr != NULL)
-		sr->write(sr, log_buffer, len);
-}
-
 static void TermWrite(struct DevTerminal *term, const char *str)
 {
 	struct TermState *state = term->state;
@@ -398,7 +379,6 @@ static void TermWrite(struct DevTerminal *term, const char *str)
 				attr[count++] = atoi(buf);
 
 				if(ch != ';' && ch != 'm') {
-					SrDebug("Got '%d', expected ';' or 'm'\n", ch);
 					Unlock(&term->dev.lock);
 					return;
 				}
@@ -408,7 +388,6 @@ static void TermWrite(struct DevTerminal *term, const char *str)
 			}
 
 			if(ch != 'm') {
-				SrDebug("Got '%d', expected 'm'\n", ch);
 				Unlock(&term->dev.lock);
 				return;
 			}
@@ -452,9 +431,6 @@ static void TermWrite(struct DevTerminal *term, const char *str)
 			term->line++;
 			term->column = 0;
 			break;
-		case '\t':
-			TermWrite(term, "    ");
-			break;
 		default:
 			TermPut(term, ch);
 			term->column++;
@@ -492,7 +468,7 @@ static struct TermState tstate = { BWHITE };
 
 static struct DevTerminal term = { 0 };
 
-static void KDINIT TermInit()
+static void KEINIT TermInit()
 {
 	struct stivale2_struct_tag_framebuffer *fb;
 	fb = Stivale2GetTag(STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);

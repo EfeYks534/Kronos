@@ -19,11 +19,11 @@
 
 #define PhysOffset(x) ((void*) PhysOffseti((uintptr_t) (x)))
 
-#define KDINIT __attribute__((constructor(0), used, noinline))
+#define KEINIT __attribute__((constructor(0), used, noinline))
 
-#define KEINIT __attribute__((constructor(1), used, noinline))
+#define KLINIT __attribute__((constructor(1), used, noinline))
 
-#define KLINIT __attribute__((constructor(2), used, noinline))
+#define Assert(expr, str) _Assert((expr), #expr, str, __FILE__, __LINE__)
 
 struct Registers
 {
@@ -62,13 +62,13 @@ struct CPUID
 };
 
 
+void _Assert(int expr, const char *sexpr, const char *str, char *file, int line);
+
 struct CPUID CPUID(uint32_t func);
 
 uint64_t FlagsGet();
 
 void FlagsSet(uint64_t flags);
-
-void KernelDeviceInit();
 
 void KernelEarlyInit();
 

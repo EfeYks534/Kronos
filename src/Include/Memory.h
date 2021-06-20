@@ -11,6 +11,8 @@
 #define PAGE_PCD     (1ULL << 5)
 #define PAGE_GLOBAL  (1ULL << 8)
 
+#define PAGE_COW (1ULL)
+
 struct SMInfo
 {
 	// There is only one SMInfo that is used across the entire system,
@@ -38,8 +40,8 @@ struct AddressSpace
 
 struct Page
 {
-	uint64_t  addr : 56; // Physical address of the page
-	uint64_t flags : 8;  // Flags of this page
+	uint64_t  addr : 48; // Physical address of the page
+	uint64_t flags : 16;  // Flags of this page
 	size_t    refc;      // Reference count, how many times this page has been mapped
 	                     // `refc` only counts pages allocated with the PMAlloc() fa-
 	                     // mily of functions

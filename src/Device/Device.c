@@ -8,7 +8,7 @@ static const char *category_names[6] =
 	"Graphics",
 	"Storage",
 	"Audio",
-	"Data",
+	"Serial",
 	"Terminals",
 };
 
@@ -18,7 +18,7 @@ static const char *type_names[][6] =
 	{"."}, // Graphics
 	{"."}, // Storage
 	{"."}, // Audio
-	{"Serial"}, // Data IO
+	{"Serial"}, // Serial
 	{"Graphics Terminal"}, // Terminal
 };
 

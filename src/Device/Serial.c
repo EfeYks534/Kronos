@@ -83,11 +83,11 @@ static int VSerialReady(struct DevSerial *dev)
 
 static struct DevSerial srcom1 = { 0 };
 
-static void KDINIT VSerialInit()
+static void KEINIT VSerialInit()
 {
 	memcpy(srcom1.dev.name, "Serial(COM1)", strlen("Serial(COM1)"));
 
-	srcom1.dev.type    = DEV_TYPE_DTSERIAL;
+	srcom1.dev.type    = DEV_TYPE_SERIAL;
 	srcom1.dev.enabled = 1;
 	srcom1.dev.lock    = 0;
 
@@ -97,7 +97,7 @@ static void KDINIT VSerialInit()
 	srcom1.write = VSerialWrite;
 	srcom1.ready = VSerialReady;
 
-	DeviceRegister(DEV_CATEGORY_DATA, &srcom1.dev);
+	DeviceRegister(DEV_CATEGORY_SERIAL, &srcom1.dev);
 
-	DevicePrimarySet(DEV_CATEGORY_DATA, &srcom1.dev);
+	DevicePrimarySet(DEV_CATEGORY_SERIAL, &srcom1.dev);
 }

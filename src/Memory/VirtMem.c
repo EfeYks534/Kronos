@@ -57,15 +57,14 @@ struct AddressSpace *MActive()
 
 static uint64_t *VMNextLevel(uint64_t *cur, uint64_t ent, uint16_t flags)
 {
-	if((cur[ent] & PAGE_PRESENT) == 0) {
-		if(flags == 0)
-			return NULL;
+	cur = PhysOffset(cur);
 
+	if((cur[ent] & PAGE_PRESENT) == 0) {
 		uint64_t addr = PMAllocPageLockless()->addr;
 
 		memset(PhysOffset(addr), 0, 4096);
 
-		cur[ent] = addr | flags;
+		cur[ent] = addr | flags | PAGE_PRESENT | PAGE_RDWR;
 
 		return PhysOffset(addr);
 	}
@@ -109,12 +108,10 @@ void MMap(void *virt, void *phys, uint16_t flags)
 
 	Invalidate(virt);
 
-	if(flags & PAGE_PRESENT) {
-		if(high)
-			sm_info->vm_total++;
-		else
-			MActive()->vm_total++;
-	}
+	if(high)
+		sm_info->vm_total++;
+	else
+		MActive()->vm_total++;
 
 
 	if(high)
@@ -151,7 +148,7 @@ void MUnmap(void *virt)
 
 	pml1[lvl1] = 0;
 
-	asm volatile("invlpg %0" :: "m"(virt) : "memory");
+	Invalidate(virt);
 
 	if(high && sm_info->vm_total > 0)
 		sm_info->vm_total--;
@@ -190,8 +187,7 @@ void MFlag(void *virt, uint16_t flags)
 
 	pml1[lvl1] = (pml1[lvl1] & ~0xFFF) | flags;
 
-	asm volatile("invlpg %0" :: "m"(virt) : "memory");
-
+	Invalidate(virt);
 
 	if(high)
 		Unlock(&sm_info->lock);
@@ -267,7 +263,7 @@ void *MPhys(void *virt)
 	uint64_t *pml1 = VMNextLevel(pml2, lvl2, 0);
 	if(pml1 == NULL) goto err;
 
-	void *ret = (pml1[lvl1] & PAGE_PRESENT) ? (void*) (pml1[lvl1] & ~0xFFF) : NULL;
+	void *ret = (void*) (pml1[lvl1] & ~0xFFF);
 
 retu:
 

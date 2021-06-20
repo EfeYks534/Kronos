@@ -20,16 +20,16 @@ struct Task
 		uint64_t   privl : 1; // Task privilege level, 0 for user and 1 for supervisor.
 
 		uint64_t    invl : 1; // Invulnerability flag, the   task cannot be  killed if
-		                    // this flag is set.
+		                      // this flag is set.
 
 		uint64_t    dead : 1; // The task wont be scheduled if  the `dead` flag is set
-		                    // If the `invl` flag isn't  set it will be  sent to the
-		                    // dead task queue where it will  be killed by the  task
-		                    // killer. If the `invl` flag is set the task will still
-		                    // be scheduled.
+		                      // If the `invl` flag isn't  set it will be  sent to the
+		                      // dead task queue where it will  be killed by the  task
+		                      // killer. If the `invl` flag is set the task will still
+		                      // be scheduled.
 
 		uint64_t   pause : 1; // The task wont be scheduled if this  flag is set, how-
-		                    // ever, the task wont be killed and can be unpaused.
+		                      // ever, the task wont be killed and can be unpaused.
 
 		uint64_t running : 1; // Set if the task is currently running
 
@@ -40,7 +40,7 @@ struct Task
 	                            // before trying to `free` it.
 
 	struct Registers      regs __attribute__((aligned(16))); // General purpose regs
-	uint8_t     ext_regs[1024] __attribute__((aligned(16))); // Other registers
+	uint8_t     ext_regs[2048] __attribute__((aligned(16))); // Other registers
 };
 
 struct Task *TaskGet(uint64_t tid);

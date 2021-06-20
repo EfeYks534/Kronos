@@ -6,14 +6,21 @@
 #include <string.h>
 #include <stdarg.h>
 
+void _Assert(int expr, const char *sexpr, const char *str, char *file, int line)
+{
+	if(expr) return;
+
+	if(file)
+		Panic(NULL, "%s:%d: Assertion \"%s\" failed: %s", file, line, sexpr, str);
+	else
+		Panic(NULL, "Assertion \"%s\" failed: %s", sexpr, str);
+}
+
 static void PrintBuffer(void *buf, size_t len)
 {
-	struct DevSerial *sr;
-	sr = DeviceGet(DEV_CATEGORY_DATA, DEV_TYPE_DTSERIAL, "Serial(COM1)");
+	struct DevSerial *sr = DevicePrimary(DEV_CATEGORY_SERIAL);
 
-
-	struct DevTerminal *term;
-	term = DeviceGet(DEV_CATEGORY_TERM, DEV_TYPE_GRTERM, "Terminal");
+	struct DevTerminal *term = DevicePrimary(DEV_CATEGORY_TERM);
 
 	uint8_t *b = buf;
 	b[len] = 0;

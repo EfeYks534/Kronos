@@ -1,5 +1,6 @@
 #include <Common.h>
 #include <Core.h>
+#include <ACPI.h>
 #include <Device.h>
 #include <Memory.h>
 #include <Stivale2.h>
@@ -10,8 +11,34 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void KernelLate()
+void KernelInit()
 {
+	KernelEarlyInit();
+
+	struct SMInfo *sm_info = SysMemInfo();
+
+	Log("\n");
+
+	Info("Total memory   : %l KiBs\n", sm_info->pm_total  / 1024);
+	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable / 1024);
+	Info("Used memory    : %l KiBs\n", sm_info->pm_used   / 1024);
+	Info("Virtual memory : %l KiBs\n\n", sm_info->vm_total  * 4096 / 1024);
+
+	Info("ACPI system descriptor tables:\n");
+
+	for(size_t i = 0; i < SDTCount(); i++) {
+		struct SDTHeader *header = ACPIGetSDT(i);
+		if(header == NULL) continue;
+
+		Log("       + ");
+
+		for(int j = 0; j < 4; j++)
+			Log("%c", header->sign[j]);
+
+		Log("\n");
+	}
+	Log("\n");
+
 	KernelLateInit();
 }
 
@@ -30,7 +57,7 @@ void KernelIdle(uint64_t is_idle)
 					break;
 			}
 
-			KernelLate();
+			KernelInit();
 		}
 
 		while(1)
@@ -63,8 +90,6 @@ void KernelIdle(uint64_t is_idle)
 
 void APMain()
 {
-	FlagsSet(FlagsGet() | (1ULL << 21));
-
 	GDTInstall();
 	IDTInstall();
 
@@ -80,23 +105,11 @@ void APMain()
 
 void KernelMain()
 {
-	FlagsSet(FlagsGet() | (1ULL << 21));
-
 	GDTLoad();
 	IDTLoad();
 
 	PMInit();
 	VMInit();	
-
-	struct SMInfo *sm_info = SysMemInfo();
-
-	KernelDeviceInit();
-	KernelEarlyInit();
-
-	Info("Total memory   : %l KiBs\n", sm_info->pm_total  / 1024);
-	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable / 1024);
-	Info("Used memory    : %l KiBs\n", sm_info->pm_used   / 1024);
-	Info("Virtual memory : %l KiBs\n", sm_info->vm_total  * 4096 / 1024);
 
 	struct stivale2_struct_tag_smp *smp;
 	smp = Stivale2GetTag(STIVALE2_STRUCT_TAG_SMP_ID);

@@ -10,7 +10,7 @@ int QueueSubmit(struct Queue *q, void *item)
 		return 0;
 	}
 
-	uint8_t *qitem = (uint8_t*) ((uintptr_t) q->items + q->size * q->tail);
+	void *qitem = (void*) ((uintptr_t) q->items + q->size * q->tail);
 
 	memcpy(qitem, item, q->size);
 
@@ -30,7 +30,7 @@ int QueueConsume(struct Queue *q, void *item)
 		return 0;
 	}
 
-	uint8_t *qitem = (uint8_t*) ((uintptr_t) q->items + q->size * q->head);
+	void *qitem = (void*) ((uintptr_t) q->items + q->size * q->head);
 
 	memcpy(item, qitem, q->size);
 

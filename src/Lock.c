@@ -19,8 +19,10 @@ void Lock(int64_t *lock)
 		asm volatile("pause");
 	}
 
-	if(tries == 0)
+	if(tries == 0) {
+		*lock = 0;
 		Panic(NULL, "Deadlocked");
+	}
 }
 
 void LockYield(int64_t *lock)
@@ -43,8 +45,10 @@ void LockYield(int64_t *lock)
 		asm volatile("pause");
 	}
 
-	if(tries == 0)
+	if(tries == 0) {
+		*lock = 0;
 		Panic(NULL, "Deadlocked");
+	}
 }
 
 void Unlock(int64_t *lock)

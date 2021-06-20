@@ -6,12 +6,12 @@
 #define DEV_CATEGORY_GRAPHICS 0x1 // Graphics related devices
 #define DEV_CATEGORY_STORAGE  0x2 // Storage devices
 #define DEV_CATEGORY_AUDIO    0x3 // Audio devices
-#define DEV_CATEGORY_DATA     0x4 // Data IO devices
+#define DEV_CATEGORY_SERIAL   0x4 // Serial devices
 #define DEV_CATEGORY_TERM     0x5 // Terminals
 
-#define DEV_TYPE_GRTERM 0x0   // VGA terminal (Graphics)
+#define DEV_TYPE_GRTERM 0x0 // VGA terminal
 
-#define DEV_TYPE_DTSERIAL 0x0 // Serial device (Data)
+#define DEV_TYPE_SERIAL 0x0 // Serial device
 
 struct Device
 {
@@ -57,3 +57,6 @@ void DevicePrimarySet(uint64_t category, struct Device *dev);
 void *DeviceGet(uint64_t category, uint64_t type, const char *name);
 
 size_t DeviceCollect(uint64_t category, struct Device **list);
+
+
+
