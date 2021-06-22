@@ -59,8 +59,6 @@ void Yield();
 
 void Lock(int64_t *lock);
 
-void LockYield(int64_t *lock);
-
 void Unlock(int64_t *lock);
 
 uint64_t TIDNew();

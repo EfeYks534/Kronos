@@ -41,7 +41,7 @@ static void SerialWrite(uint16_t port, const void *buf, size_t len)
 
 static void VSerialPut(struct DevSerial *dev, uint8_t ch)
 {
-	LockYield(&dev->dev.lock);
+	Lock(&dev->dev.lock);
 
 	if(!dev->dev.enabled) {
 		Unlock(&dev->dev.lock);
@@ -54,7 +54,7 @@ static void VSerialPut(struct DevSerial *dev, uint8_t ch)
 
 static void VSerialWrite(struct DevSerial *dev, const void *buf, size_t n)
 {
-	LockYield(&dev->dev.lock);
+	Lock(&dev->dev.lock);
 
 	if(!dev->dev.enabled) {
 		Unlock(&dev->dev.lock);
@@ -67,7 +67,7 @@ static void VSerialWrite(struct DevSerial *dev, const void *buf, size_t n)
 
 static int VSerialReady(struct DevSerial *dev)
 {
-	LockYield(&dev->dev.lock);
+	Lock(&dev->dev.lock);
 
 	if(!dev->dev.enabled) {
 		Unlock(&dev->dev.lock);
@@ -83,7 +83,8 @@ static int VSerialReady(struct DevSerial *dev)
 
 static struct DevSerial srcom1 = { 0 };
 
-static void KEINIT VSerialInit()
+//static void KEINIT VSerialInit()
+void VSerialInit()
 {
 	memcpy(srcom1.dev.name, "Serial(COM1)", strlen("Serial(COM1)"));
 

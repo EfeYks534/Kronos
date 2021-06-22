@@ -32,11 +32,11 @@ void VMInit()
 	}
 
 
-	for(uintptr_t phys = 0; phys < sm_info->pm_total; phys += 4096)
-		MMap(PhysOffset(phys), (void*) phys, PAGE_PRESENT | PAGE_RDWR);
+	for(uintptr_t phys = 0; phys < sm_info->pm_total; phys += 2097152)
+		MMapHuge(PhysOffset(phys), (void*) phys, PAGE_PRESENT | PAGE_RDWR);
 
-	for(uintptr_t phys = 0; phys < 0x80000000; phys += 4096)
-		MMap((void*) (KERNEL_OFFSET + phys), (void*) phys, PAGE_PRESENT | PAGE_RDWR);
+	for(uintptr_t phys = 0; phys < 0x80000000; phys += 2097152)
+		MMapHuge((void*) (KERNEL_OFFSET + phys), (void*) phys, PAGE_PRESENT | PAGE_RDWR);
 
 	MSwitch(&kspace);
 }
@@ -105,6 +105,44 @@ void MMap(void *virt, void *phys, uint16_t flags)
 	uint64_t *pml1 = VMNextLevel(pml2, lvl2, flags);
 
 	pml1[lvl1] = (uintptr_t) phys | flags;
+
+	Invalidate(virt);
+
+	if(high)
+		sm_info->vm_total++;
+	else
+		MActive()->vm_total++;
+
+
+	if(high)
+		Unlock(&sm_info->lock);
+	else
+		Unlock(&MActive()->lock);
+}
+
+void MMapHuge(void *virt, void *phys, uint16_t flags)
+{
+	int high = (uintptr_t) virt >= PHYS_OFFSET;
+
+	if(high)
+		Lock(&sm_info->lock);
+	else
+		Lock(&MActive()->lock);
+
+
+	uint64_t *ptab = PhysOffset(high ? sm_info->ptab : MActive()->ptab);
+
+	uintptr_t addr = (uintptr_t) virt;
+
+	size_t lvl4 = (addr >> 39) & 0x1FF;
+	size_t lvl3 = (addr >> 30) & 0x1FF;
+	size_t lvl2 = (addr >> 21) & 0x1FF;
+
+	uint64_t *pml3 = VMNextLevel(ptab, lvl4, flags);
+	uint64_t *pml2 = VMNextLevel(pml3, lvl3, flags);
+	uint64_t *pml1 = VMNextLevel(pml2, lvl2, flags);
+
+	pml2[lvl2] = (uintptr_t) phys | flags | PAGE_HUGE;
 
 	Invalidate(virt);
 
@@ -215,15 +253,15 @@ int MValid(void *virt)
 	size_t lvl1 = (addr >> 12) & 0x1FF;
 
 	uint64_t *pml3 = VMNextLevel(ptab, lvl4, 0);
-	if(pml3 == NULL) goto err;
 	uint64_t *pml2 = VMNextLevel(pml3, lvl3, 0);
-	if(pml2 == NULL) goto err;
 	uint64_t *pml1 = VMNextLevel(pml2, lvl2, 0);
-	if(pml1 == NULL) goto err;
 
-	int ret = (pml1[lvl1] & PAGE_PRESENT) != 0;
+	int ret = 0;
 
-retu:
+	if(pml2[lvl2] & PAGE_HUGE)
+		ret = (pml2[lvl2] & PAGE_PRESENT) != 0;
+	else
+		ret = (pml1[lvl1] & PAGE_PRESENT) != 0;
 
 	if(high)
 		Unlock(&sm_info->lock);
@@ -231,10 +269,6 @@ retu:
 		Unlock(&MActive()->lock);
 
 	return ret;
-
-err:
-	ret = 0;
-	goto retu;
 }
 
 void *MPhys(void *virt)
@@ -257,15 +291,15 @@ void *MPhys(void *virt)
 	size_t lvl1 = (addr >> 12) & 0x1FF;
 
 	uint64_t *pml3 = VMNextLevel(ptab, lvl4, 0);
-	if(pml3 == NULL) goto err;
 	uint64_t *pml2 = VMNextLevel(pml3, lvl3, 0);
-	if(pml2 == NULL) goto err;
 	uint64_t *pml1 = VMNextLevel(pml2, lvl2, 0);
-	if(pml1 == NULL) goto err;
 
-	void *ret = (void*) (pml1[lvl1] & ~0xFFF);
+	void *ret = NULL;
 
-retu:
+	if(pml2[lvl2] & PAGE_HUGE)
+		ret = (void*) (pml2[lvl2] & ~0xFFF);
+	else
+		ret = (void*) (pml1[lvl1] & ~0xFFF);
 
 	if(high)
 		Unlock(&sm_info->lock);
@@ -273,9 +307,6 @@ retu:
 		Unlock(&MActive()->lock);
 
 	return ret;
-err:
-	ret = NULL;
-	goto retu;
 }
 
 struct AddressSpace *MKernel()

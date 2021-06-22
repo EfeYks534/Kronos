@@ -13,18 +13,18 @@ struct StackFrame
 	uint64_t           rip;
 } PACKED;
 
+int is_panicking = 0;
+
 static char panic_buffer[4096] = { 0 };
 
 void Panic(struct Registers *r, const char *fmt, ...)
 {
 	asm volatile("cli");
 
-	static int panic = 0;
-
-	if(panic)
+	if(is_panicking)
 		Halt();
 
-	panic = 1;
+	is_panicking = 1;
 
 	Log("\x1B[31;1m\n\nKernel Panic: \x1B[35;1m");
 

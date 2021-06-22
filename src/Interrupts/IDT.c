@@ -15,9 +15,9 @@ void ExceptionsLoad();
 uint8_t IDTEntryAlloc(uint8_t attr, void (*handler)(struct Registers*))
 {
 	for(int i = 0; i < 4; i++) {
-		if(idt_bitmap[i] == -1ULL) continue;
+		if(idt_bitmap[i] == 0) continue;
 
-		uint8_t bit = idt_bitmap[i] ? __builtin_ctz(idt_bitmap[i]) : 0;
+		uint8_t bit = __builtin_ffsll(idt_bitmap[i]) - 1;
 
 		uint8_t index = i * 64 + bit;
 
@@ -32,20 +32,20 @@ uint8_t IDTEntryAlloc(uint8_t attr, void (*handler)(struct Registers*))
 
 void IDTEntryFree(uint8_t vector)
 {
-	if((idt_bitmap[vector / 64] & (1 << (vector % 64))) == 0)
+	if((idt_bitmap[vector / 64] & (1ULL << (vector % 64))) != 0)
 		Panic(NULL, "Can't free unused IDT entry");
 
-	idt_bitmap[vector / 64] &= ~(1 << (vector % 64));
+	idt_bitmap[vector / 64] |= 1ULL << (vector % 64);
 
 	idt_entries[vector].flags &= ~IDT_ATTR_PRESENT;
 }
 
 void IDTEntrySet(uint8_t vector, uint8_t attr, void (*handler)(struct Registers*))
 {
-	if(idt_bitmap[vector / 64] & (1 << (vector % 64)))
+	if((idt_bitmap[vector / 64] & (1ULL << (vector % 64))) == 0)
 		Panic(NULL, "Tried to change already used IDT entry");
 
-	idt_bitmap[vector / 64] |= 1 << (vector % 64);
+	idt_bitmap[vector / 64] &= ~(1ULL << (vector % 64));
 
 	idt_entries[vector].flags = attr;
 
@@ -75,7 +75,7 @@ void IDTClean()
 {
 	memset(idt_entries,  0, sizeof(idt_entries));
 	memset(&idt_pointer, 0, sizeof(idt_pointer));
-	memset(idt_bitmap,   0, sizeof(idt_bitmap));
+	memset(idt_bitmap,  -1, sizeof(idt_bitmap));
 }
 
 void IDTInstall()

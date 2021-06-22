@@ -10,6 +10,7 @@
 #define PAGE_NCACHE  (1ULL << 4)
 #define PAGE_PCD     (1ULL << 5)
 #define PAGE_GLOBAL  (1ULL << 8)
+#define PAGE_HUGE    (1ULL << 7)
 
 #define PAGE_COW (1ULL)
 
@@ -61,6 +62,8 @@ void MSwitch(struct AddressSpace *space);
 struct AddressSpace *MKernel();
 
 struct AddressSpace *MActive();
+
+void MMapHuge(void *virt, void *phys, uint16_t flags);
 
 void MMap(void *virt, void *phys, uint16_t flags);
 

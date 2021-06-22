@@ -103,13 +103,17 @@ void APMain()
 		Yield();
 }
 
+void VSerialInit();
+
 void KernelMain()
 {
 	GDTLoad();
 	IDTLoad();
 
+	VSerialInit(); // We want to be able to debug everything pre-scheduler
+
 	PMInit();
-	VMInit();	
+	VMInit();
 
 	struct stivale2_struct_tag_smp *smp;
 	smp = Stivale2GetTag(STIVALE2_STRUCT_TAG_SMP_ID);
