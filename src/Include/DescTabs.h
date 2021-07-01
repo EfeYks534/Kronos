@@ -328,3 +328,4 @@ void IDTCommonHandler253();
 void IDTCommonHandler254();
 void IDTCommonHandler255();
 
+void ExceptionsLoad();

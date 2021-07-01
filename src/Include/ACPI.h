@@ -43,7 +43,7 @@ struct MCFG
 		uint8_t bus_start;
 		uint8_t   bus_end;
 		uint32_t     rsvd;
-	} config_list[] PACKED;
+	} PACKED config_list[];
 } PACKED;
 
 struct MADT
@@ -63,30 +63,31 @@ struct HPET
 {
 	struct SDTHeader hdr;
 
-	struct
-	{
-		uint32_t     hw_rev :  8;
-		uint32_t  cmp_count :  5;
-		uint32_t count_size :  1;
-		uint32_t       rsvd :  1;
-		uint32_t    irq_cap :  1;
-		uint32_t     vendor : 16;
-	} PACKED;
+	uint8_t hw_rev;
 
 	struct
 	{
-		uint8_t  space_id;
-		uint8_t bit_width;
-		uint8_t   bit_off;
-		uint8_t      rsvd;
-		uint64_t     addr;
-	} address PACKED;
+		uint8_t  cmp_count :  5;
+		uint8_t count_size :  1;
+		uint8_t       rsvd :  1;
+		uint8_t    irq_cap :  1;
+	} PACKED;
+
+	uint16_t vendor;
+
+	struct
+	{
+		uint8_t   space_id;
+		uint8_t  bit_width;
+		uint8_t bit_offset;
+		uint8_t       rsvd;
+		uint64_t      addr;
+	} PACKED address;
 
 	uint8_t hpet_number;
 	uint16_t   min_tick;
 	uint8_t   page_prot;
 } PACKED;
-
 
 size_t SDTCount();
 

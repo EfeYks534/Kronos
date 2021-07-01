@@ -62,6 +62,8 @@ struct CPUID
 };
 
 
+void Sleep(size_t nsecs);
+
 void _Assert(int expr, const char *sexpr, const char *str, char *file, int line);
 
 struct CPUID CPUID(uint32_t func);

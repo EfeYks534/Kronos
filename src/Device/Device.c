@@ -2,7 +2,7 @@
 #include <Device.h>
 #include <string.h>
 
-static const char *category_names[6] =
+static const char *category_names[7] =
 {
 	"(null)",
 	"Graphics",
@@ -10,9 +10,10 @@ static const char *category_names[6] =
 	"Audio",
 	"Serial",
 	"Terminals",
+	"Timers",
 };
 
-static const char *type_names[][6] =
+static const char *type_names[][7] =
 {
 	{"."},
 	{"."}, // Graphics
@@ -20,6 +21,7 @@ static const char *type_names[][6] =
 	{"."}, // Audio
 	{"Serial"}, // Serial
 	{"Graphics Terminal"}, // Terminal
+	{"High Precision Event Timer"}, // Timers
 };
 
 struct DeviceCategory
@@ -114,6 +116,9 @@ void *DeviceGet(uint64_t category, uint64_t type, const char *name)
 
 		if(cat->devices[i]->type == type) {
 			struct Device *dev = cat->devices[i];
+
+			if(name == NULL)
+				return dev;
 
 			if(strncmp(dev->name, name, 64) == 0)
 				return dev;

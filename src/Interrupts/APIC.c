@@ -1,5 +1,7 @@
 #include <Common.h>
 #include <Memory.h>
+#include <Peripheral.h>
+#include <DescTabs.h>
 #include <ACPI.h>
 #include <APIC.h>
 
@@ -12,7 +14,16 @@ struct MADTLAPICOverride
 } PACKED;
 
 
-static uint32_t *lapic_addr = NULL;
+static uint8_t *lapic_addr = NULL;
+
+static size_t spur_count = 0;
+
+
+static void SpurHandler(struct Registers *regs)
+{
+	spur_count++;
+	APICEOI();
+}
 
 static void KLINIT APICInit()
 {
@@ -45,6 +56,18 @@ static void KLINIT APICInit()
 	}
 
 	Info("LAPIC: Base address identified as %xl\n", MPhys(lapic_addr));
+
+
+	IDTEntrySet(0xFF, IDT_ATTR_PRESENT | IDT_ATTR_INTR, SpurHandler);
+
+	uint32_t spur = MMRead32(&lapic_addr[0xF0]);
+
+	MMWrite32(&lapic_addr[0xF0], spur | (1ULL << 8) | 0xFF);
+}
+
+void APICEOI()
+{
+	MMWrite32(&lapic_addr[0xB0], 0);
 }
 
 void ICRSend(struct ICR *icr);

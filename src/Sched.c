@@ -165,7 +165,6 @@ uint64_t TIDNew()
 void Yield()
 {
 	int ifl = (FlagsGet() >> 9) & 1;
-
 	asm volatile("cli");
 
 

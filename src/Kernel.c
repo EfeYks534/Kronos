@@ -40,6 +40,11 @@ void KernelInit()
 	Log("\n");
 
 	KernelLateInit();
+
+	Assert(DevicePrimary(DEV_CATEGORY_TIMER) != NULL,
+			"System can't run without a primary timer");
+
+	asm volatile("sti");
 }
 
 void KernelIdle(uint64_t is_idle)
@@ -77,7 +82,7 @@ void KernelIdle(uint64_t is_idle)
 	uint64_t stack = (uint64_t) calloc(16384, 1);
 
 	task->regs.ss    = 0x10;
-	task->regs.rsp   = stack + 16376;
+	task->regs.rsp   = stack + 16384;
 	task->regs.flags = 1ULL << 21;
 	task->regs.cs    = 0x08;
 	task->regs.rip   = (uintptr_t) KernelIdle;
@@ -124,7 +129,7 @@ void KernelMain()
 
 		uint64_t stack = PMAlloc();
 
-		core->target_stack = PhysOffseti(stack + 4088);
+		core->target_stack = PhysOffseti(stack + 4096);
 		core->goto_address = (uint64_t) APMain;
 	}
 

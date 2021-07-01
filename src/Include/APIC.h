@@ -31,6 +31,8 @@ struct ICR
 
 } PACKED;
 
+void APICEOI();
+
 void ICRSend(struct ICR *icr);
 
 void IPISend(uint8_t type, uint32_t dest);

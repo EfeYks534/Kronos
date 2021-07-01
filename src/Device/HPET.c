@@ -1,7 +1,10 @@
 #include <Common.h>
 #include <Core.h>
+#include <Peripheral.h>
+#include <DescTabs.h>
 #include <Stivale2.h>
 #include <Device.h>
+#include <APIC.h>
 #include <ACPI.h>
 #include <Task.h>
 #include <stddef.h>
@@ -20,6 +23,35 @@
 #define HPET_TIMER_COMPAR(N) (0x108 + 0x20 * (N))
 #define HPET_TIMER_FSB(N)    (0x110 + 0x20 * (N))
 
+struct HPETTimerCfg
+{
+	uint64_t           rsvd0 :  1;
+	uint64_t    int_type_cnf :  1;
+	uint64_t     int_enb_cnf :  1;
+	uint64_t        type_cnf :  1;
+	uint64_t     per_int_cap :  1;
+	uint64_t        size_cap :  1;
+	uint64_t     val_set_cnf :  1;
+	uint64_t           rsvd1 :  1;
+	uint64_t      mode32_cnf :  1;
+	uint64_t   int_route_cnf :  5;
+	uint64_t      fsb_en_cnf :  1;
+	uint64_t fsb_int_del_cap :  1;
+	uint64_t           rsvd2 : 16;
+	uint64_t   int_route_cap : 32;
+} PACKED;
+
+struct HPETCapID
+{
+	uint64_t             rev_id :  8;
+	uint64_t        num_tim_cap :  5;
+	uint64_t     count_size_cap :  1;
+	uint64_t               rsvd :  1;
+	uint64_t         leg_rt_cap :  1;
+	uint64_t             vendor : 16;
+	uint64_t counter_clk_period : 32;
+} PACKED;
+
 struct HPETHandler
 {
 	size_t time;
@@ -30,29 +62,45 @@ struct HPETHandler
 struct HPETState
 {
 	struct HPET *hpet;
+	uint8_t     *regs;
 	size_t       time;
 	size_t       freq;
-	uint64_t     hmap;
-
-	struct HPETHandler handlers[64];
+	size_t     period;
 };
 
-
-static void HPETInit(struct DevTimer *timer)
+static void HPETTick(struct HPETState *state, size_t nsecs)
 {
-	struct HPETState *state = calloc(1, sizeof(struct HPETState));
+	if(nsecs < state->period / 1000000) nsecs = state->period / 1000000;
 
-	timer->state = state;
+	nsecs = (nsecs * 1000000) / state->period;
 
-	state->hpet = ACPIFindSDT("HPET");
-	state->hmap = -1ULL;
+	MMWrite64(&state->regs[HPET_TIMER_COMPAR(0)], MMRead64(&state->regs[HPET_COUNTER]) + nsecs);
+}
 
-	Assert(state->hpet != NULL, "");
+static void HPETHandler(struct Registers *regs)
+{
+	struct DevTimer *timer = DeviceGet(DEV_CATEGORY_TIMER, DEV_TYPE_HPET, NULL);
 
-	Assert(state->hpet->address.space_id == 0, "");
+	if(timer == NULL) {
+		Error("HPET: Can't find timer device\n");
+		APICEOI();
+		return;
+	}
 
+	if(!timer->dev.enabled) {
+		APICEOI();
+		return;
+	}
 
-	
+	Lock(&timer->dev.lock);
+
+	struct HPETState *state = timer->state;
+
+	// TODO: Add more stuff to make the timers more useful
+
+	Unlock(&timer->dev.lock);
+
+	APICEOI();
 }
 
 void HPETReset(struct DevTimer *timer)
@@ -68,6 +116,10 @@ void HPETReset(struct DevTimer *timer)
 
 	state->time = 0;
 
+	MMWrite64(&state->regs[HPET_CONFIG], MMRead64(&state->regs[HPET_CONFIG]) & ~1ULL);
+	MMWrite64(&state->regs[HPET_COUNTER], 0);
+	MMWrite64(&state->regs[HPET_CONFIG], MMRead64(&state->regs[HPET_CONFIG]) | 1ULL);
+
 	Unlock(&timer->dev.lock);
 }
 
@@ -77,6 +129,8 @@ size_t HPETTime(struct DevTimer *timer)
 
 	struct HPETState *state = timer->state;
 
+	state->time = (MMRead64(&state->regs[HPET_COUNTER]) * state->period) / 1000000;
+
 	size_t time = state->time;
 
 	Unlock(&timer->dev.lock);
@@ -84,55 +138,73 @@ size_t HPETTime(struct DevTimer *timer)
 	return time;
 }
 
-void HPETHandlerRegister(struct DevTimer *timer, void (*h)(struct DevTimer*), size_t n)
+static KLINIT void HPETInit()
 {
-	Lock(&timer->dev.lock);
+	struct DevTimer *timer = calloc(1, sizeof(struct DevTimer));
 
-	if(!timer->dev.enabled) {
-		Unlock(&timer->dev.lock);
+	timer->dev.type    = DEV_TYPE_HPET;
+	timer->dev.enabled = 1;
+
+	memcpy(timer->dev.name, "HPET", 5);
+
+	timer->reset    = HPETReset;
+	timer->time     = HPETTime;
+
+	struct HPETState *state = calloc(1, sizeof(struct HPETState));
+
+	timer->state = state;
+
+	state->hpet = ACPIFindSDT("HPET");
+
+	// Sanity check the HPET table
+
+	if(state->hpet == NULL)
 		return;
-	}
 
-	struct HPETState *state = timer->state;
-
-	if(state->hmap == 0) {
-		Unlock(&timer->dev.lock);
+	if(state->hpet->address.space_id != 0)
 		return;
-	}
 
-	size_t bit = __builtin_ffsll(state->hmap) - 1;
-
-	state->hmap &= ~(1ULL << bit);
-
-	state->handlers[bit] = (struct HPETHandler) { n, h };
-
-	Unlock(&timer->dev.lock);
-}
-
-void HPETHandlerUnregister(struct DevTimer *timer, void (*h)(struct DevTimer*))
-{
-	Lock(&timer->dev.lock);
-
-	if(!timer->dev.enabled) {
-		Unlock(&timer->dev.lock);
+	if(state->hpet->address.addr == 0)
 		return;
-	}
 
-	struct HPETState *state = timer->state;
+	state->regs = PhysOffset(state->hpet->address.addr);
 
-	if(state->hmap == -1ULL) {
-		Unlock(&timer->dev.lock);
+
+	struct HPETCapID cap = (struct HPETCapID) { 0 };
+
+	*((uint64_t*) &cap) = MMRead64(&state->regs[HPET_CAPID]);
+
+	if(cap.rev_id == 0)
 		return;
-	}
 
-	for(int i = 0; i < 64; i++) {
-		if((state->hmap >> i) & 1) continue;
+	state->freq   = 0x38D7EA4C68000 / cap.counter_clk_period;
+	state->period = cap.counter_clk_period;
 
-		if(state->handlers[i].handler == h) {
-			state->hmap |= 1ULL << i;
-			break;
-		}
-	}
+	struct HPETTimerCfg tn_cfg = (struct HPETTimerCfg) { 0 } ;
 
-	Unlock(&timer->dev.lock);
+	*((uint64_t*) &tn_cfg) = MMRead64(&state->regs[HPET_TIMER_CONFIG(0)]);
+
+	if(tn_cfg.fsb_int_del_cap != 1) return;
+
+	tn_cfg.int_enb_cnf  = 1;
+	tn_cfg.fsb_en_cnf   = 1;
+	tn_cfg.mode32_cnf   = 0;
+	tn_cfg.int_type_cnf = 0;
+
+
+	uint64_t vec = IDTEntryAlloc(IDT_ATTR_PRESENT | IDT_ATTR_TRAP, HPETHandler);
+
+	uint64_t tn_fsb = 0;
+
+	tn_fsb  = (0xFEE00000 | (ProcBSP() << 12)) << 32;
+	tn_fsb |= vec;
+
+	MMWrite64(&state->regs[HPET_TIMER_CONFIG(0)], *((uint64_t*) &tn_cfg));
+
+	MMWrite64(&state->regs[HPET_TIMER_FSB(0)], tn_fsb);
+
+	MMWrite64(&state->regs[HPET_CONFIG], MMRead64(&state->regs[HPET_CONFIG]) | 1);
+
+	DeviceRegister(DEV_CATEGORY_TIMER, &timer->dev);
+	DevicePrimarySet(DEV_CATEGORY_TIMER, &timer->dev);
 }

@@ -63,17 +63,11 @@ struct DevTimer
 
 	void *state;
 
-	void              (*reset) (struct DevTimer*);
-	size_t             (*time) (struct DevTimer*);
-	void   (*handler_register) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
-	void (*handler_unregister) (struct DevTimer*, void (*)(struct DevTimer*));
+	void    (*reset) (struct DevTimer*);
+	size_t   (*time) (struct DevTimer*);
 
 	// `time()` returns the amount of  nanoseconds since this timer
-	// has  been last reset. `handler_register()` registers a hand-
-	// ler to the timer  which runs every %3 nanoseconds. `handler_
-	// unregister()` unregisters an existing handler. `reset()` re-
-	// sets the timer to start counting from 0. The timer won't co-
-	// unt when it's disabled.
+	// has  been last reset. `reset()` resets the timer back to 0.
 };
 
 void DeviceRegister(uint64_t category, struct Device *dev);

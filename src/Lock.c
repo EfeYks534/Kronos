@@ -8,7 +8,7 @@ void Lock(int64_t *lock)
 {
 	if(is_panicking) return;
 
-	int ifl = (FlagsGet() >> 9) & 1;
+	uint64_t ifl = (FlagsGet() >> 9) & 1;
 
 	asm volatile("cli");
 
@@ -33,9 +33,7 @@ void Lock(int64_t *lock)
 		Panic(NULL, "Deadlocked");
 	}
 
-	uint32_t *higher = (uint32_t*) ((uintptr_t) lock + 4);
-
-	*higher = ifl;
+	*lock = *lock | (ifl << 32);
 }
 
 void Unlock(int64_t *lock)
@@ -44,7 +42,7 @@ void Unlock(int64_t *lock)
 
 	uint32_t *higher = (uint32_t*) ((uintptr_t) lock + 4);
 
-	if(*higher)
+	if(*lock >> 32)
 		asm volatile("sti");
 
 	__atomic_store_n(lock, 0, __ATOMIC_RELEASE);

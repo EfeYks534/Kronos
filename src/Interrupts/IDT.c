@@ -10,7 +10,6 @@ static uint64_t idt_bitmap[4] = { 0 };
 
 uintptr_t idt_handlers[256] = { 0 };
 
-void ExceptionsLoad();
 
 uint8_t IDTEntryAlloc(uint8_t attr, void (*handler)(struct Registers*))
 {
@@ -348,6 +347,8 @@ void IDTLoad()
 	IDTEntryCreate(255, IDT_ATTR_PRESENT | IDT_ATTR_TRAP, IDTCommonHandler255);
 
 	ExceptionsLoad();
+
+	
 
 	IDTInstall();
 }
