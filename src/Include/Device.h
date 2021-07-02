@@ -65,9 +65,19 @@ struct DevTimer
 
 	void    (*reset) (struct DevTimer*);
 	size_t   (*time) (struct DevTimer*);
+	size_t   (*rate) (struct DevTimer*);
+	void (*one_shot) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
+	void (*periodic) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
 
 	// `time()` returns the amount of  nanoseconds since this timer
-	// has  been last reset. `reset()` resets the timer back to 0.
+	// has  been last  reset. `reset()` resets the timer back to 0.
+	// `rate()` returns the rate at which this timer ticks. `one_sh
+	// ot()` registers a timer  that will run once and never again.
+	// `periodic()` registers a timer  that will run every n ticks.
+
+	// Both `one_shot()` and `periodic()` take ticks as an argument,
+	// not nanoseconds. The tick rate can be found in `rate()` which
+	// returns the rate in nanoseconds.
 };
 
 void DeviceRegister(uint64_t category, struct Device *dev);

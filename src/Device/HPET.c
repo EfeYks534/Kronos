@@ -14,6 +14,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define HPET_RATE 1000000
+
 #define HPET_CAPID   0x000
 #define HPET_CONFIG  0x010
 #define HPET_INTR    0x020
@@ -54,7 +56,13 @@ struct HPETCapID
 
 struct HPETHandler
 {
-	size_t time;
+	struct
+	{
+		size_t     time : 63;
+		size_t periodic :  1;
+	} PACKED;
+
+	size_t counter;
 
 	void (*handler) (struct DevTimer*);
 };
@@ -66,6 +74,9 @@ struct HPETState
 	size_t       time;
 	size_t       freq;
 	size_t     period;
+	size_t hand_count;
+
+	struct HPETHandler handlers[256];
 };
 
 static void HPETTick(struct HPETState *state, size_t nsecs)
@@ -96,11 +107,34 @@ static void HPETHandler(struct Registers *regs)
 
 	struct HPETState *state = timer->state;
 
-	// TODO: Add more stuff to make the timers more useful
+
+	for(int i = 0; i < state->hand_count; i++) {
+		struct HPETHandler *hand = &state->handlers[i];
+
+		if(--hand->counter == 0) {
+			void (*h)(struct DevTimer*) = hand->handler;
+			hand->counter = hand->time;
+
+
+			if(!hand->periodic && i < (state->hand_count - 1)) {
+				for(int j = i; j < state->hand_count - 2; j++)
+					state->handlers[j] = state->handlers[j + 1];
+
+				state->hand_count--;
+			}
+
+			h(timer);
+		}
+	}
+
 
 	Unlock(&timer->dev.lock);
 
 	APICEOI();
+
+	HPETTick(state, HPET_RATE);
+
+	// TODO: Schedule here
 }
 
 void HPETReset(struct DevTimer *timer)
@@ -120,12 +154,20 @@ void HPETReset(struct DevTimer *timer)
 	MMWrite64(&state->regs[HPET_COUNTER], 0);
 	MMWrite64(&state->regs[HPET_CONFIG], MMRead64(&state->regs[HPET_CONFIG]) | 1ULL);
 
+
+	HPETTick(state, HPET_RATE);
+
 	Unlock(&timer->dev.lock);
 }
 
 size_t HPETTime(struct DevTimer *timer)
 {
 	Lock(&timer->dev.lock);
+
+	if(!timer->dev.enabled) {
+		Unlock(&timer->dev.lock);
+		return 0;
+	}
 
 	struct HPETState *state = timer->state;
 
@@ -138,6 +180,70 @@ size_t HPETTime(struct DevTimer *timer)
 	return time;
 }
 
+size_t HPETRate(struct DevTimer *timer)
+{
+	return HPET_RATE;
+}
+
+void HPETOneShot(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t ticks)
+{
+	Lock(&timer->dev.lock);
+
+	if(!timer->dev.enabled) {
+		Unlock(&timer->dev.lock);
+		return;
+	}
+
+	struct HPETState *state = timer->state;
+
+	if(state->hand_count >= 256) {
+		return;
+	}
+
+	struct HPETHandler handler = (struct HPETHandler) { 0 };
+
+	handler.time     = ticks;
+	handler.counter  = ticks;
+	handler.periodic = 0;
+	handler.handler  = hand;
+
+	state->handlers[state->hand_count++] = handler;
+
+	Unlock(&timer->dev.lock);
+
+	return;
+}
+
+void HPETPeriodic(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t ticks)
+{
+	Lock(&timer->dev.lock);
+
+	if(!timer->dev.enabled) {
+		Unlock(&timer->dev.lock);
+		return;
+	}
+
+	struct HPETState *state = timer->state;
+
+	if(state->hand_count >= 256) {
+		return;
+	}
+
+	struct HPETHandler handler = (struct HPETHandler) { 0 };
+
+	handler.time     = ticks;
+	handler.counter  = ticks;
+	handler.periodic = 1;
+	handler.handler  = hand;
+
+	state->handlers[state->hand_count++] = handler;
+
+	Unlock(&timer->dev.lock);
+
+	return;
+}
+
+
 static KLINIT void HPETInit()
 {
 	struct DevTimer *timer = calloc(1, sizeof(struct DevTimer));
@@ -149,6 +255,8 @@ static KLINIT void HPETInit()
 
 	timer->reset    = HPETReset;
 	timer->time     = HPETTime;
+	timer->one_shot = HPETOneShot;
+	timer->periodic = HPETPeriodic;
 
 	struct HPETState *state = calloc(1, sizeof(struct HPETState));
 
@@ -207,4 +315,6 @@ static KLINIT void HPETInit()
 
 	DeviceRegister(DEV_CATEGORY_TIMER, &timer->dev);
 	DevicePrimarySet(DEV_CATEGORY_TIMER, &timer->dev);
+
+	HPETTick(state, HPET_RATE);
 }
