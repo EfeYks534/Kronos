@@ -4,6 +4,7 @@
 #include <Device.h>
 #include <Memory.h>
 #include <Stivale2.h>
+#include <Peripheral.h>
 #include <DescTabs.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -45,6 +46,10 @@ void KernelInit()
 			"System can't run without a primary timer");
 
 	asm volatile("sti");
+
+	KernelDeviceInit();
+
+	
 }
 
 void KernelIdle(uint64_t is_idle)

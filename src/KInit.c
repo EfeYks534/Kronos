@@ -6,6 +6,8 @@ extern kinit_obj keinit_begin;
 extern kinit_obj keinit_end;
 extern kinit_obj klinit_begin;
 extern kinit_obj klinit_end;
+extern kinit_obj kdinit_begin;
+extern kinit_obj kdinit_end;
 
 
 void KernelEarlyInit()
@@ -18,6 +20,13 @@ void KernelEarlyInit()
 void KernelLateInit()
 {
 	for(kinit_obj *obj = &klinit_begin; obj < &klinit_end; obj++) {
+		(*obj)();
+	}
+}
+
+void KernelDeviceInit()
+{
+	for(kinit_obj *obj = &kdinit_begin; obj < &kdinit_end; obj++) {
 		(*obj)();
 	}
 }

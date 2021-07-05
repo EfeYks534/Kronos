@@ -83,6 +83,11 @@ uint16_t MMRead16(void *addr);
 
 uint8_t MMRead8(void *addr);
 
+
+struct PCIDevice *PCIDeviceGet(struct PCIAddress loc);
+
 struct PCIAddress *PCIDeviceList();
 
 size_t PCIDeviceCount();
+
+struct PCIDevice *PCIDeviceCache(struct PCIAddress loc);

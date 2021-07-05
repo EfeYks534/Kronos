@@ -1,10 +1,14 @@
 #include <Common.h>
 #include <Peripheral.h>
 #include <ACPI.h>
+#include <Task.h>
+#include <stdlib.h>
+#include <string.h>
 
-static struct PCIAddress pci_dev_list[256] = { 0 };
+static struct PCIAddress pci_dev_list[1024] = { 0 };
 
 static size_t pci_dev_count = 0;
+
 
 static uintptr_t PCIBase(struct PCIAddress loc)
 {
@@ -35,6 +39,12 @@ static uintptr_t PCIBase(struct PCIAddress loc)
 
 	return base;
 }
+
+struct PCIDevice *PCIDeviceGet(struct PCIAddress loc)
+{
+	return PhysOffset(PCIBase(loc));
+}
+
 
 static void PCIEnumFunc(struct PCIAddress loc);
 
@@ -126,4 +136,60 @@ struct PCIAddress *PCIDeviceList()
 size_t PCIDeviceCount()
 {
 	return pci_dev_count;
+}
+
+struct Bucket
+{
+	struct PCIDevice *dev[32];
+	struct PCIAddress loc[32];
+
+	size_t count;
+};
+
+static struct Bucket *pci_dev_cache[512] = { 0 };
+
+static int64_t pci_cache_lock = 0;
+
+struct PCIDevice *PCIDeviceCache(struct PCIAddress loc)
+{
+	Lock(&pci_cache_lock);
+
+	size_t hash = loc.seg + ((loc.bus << 3) + (loc.dev << 2) + (loc.fun << 1)) * 73;
+
+	hash = (hash | (hash >> 9)) & 0x1FF;
+
+	struct Bucket *bucket = pci_dev_cache[hash];
+
+	if(bucket == NULL) {
+		bucket = calloc(1, sizeof(struct Bucket));
+		pci_dev_cache[hash] = bucket;
+	}
+
+
+	if(bucket->count != 0) {
+		for(size_t i = 0; i < bucket->count; i++)
+			if(!memcmp(&bucket->loc[i], &loc, sizeof(loc)) && bucket->dev[i] != NULL) {
+				Unlock(&pci_cache_lock);
+				return bucket->dev[i];
+			}
+	}
+
+
+	Assert(bucket->count < 32, "Ran out of cache entries for PCIe device");
+
+	uint32_t *dev = (uint32_t*) PCIDeviceGet(loc);
+
+	uint32_t *cached = calloc(1, sizeof(struct PCIDevice));
+
+	for(size_t i = 0; i < 16; i++)
+		cached[i] = MMRead32(&dev[i]);
+
+	bucket->loc[bucket->count] = loc;
+	bucket->dev[bucket->count] = (struct PCIDevice*) cached;
+
+	bucket->count++;
+
+	Unlock(&pci_cache_lock);
+
+	return (struct PCIDevice*) cached;
 }

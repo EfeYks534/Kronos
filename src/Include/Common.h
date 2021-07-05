@@ -23,6 +23,8 @@
 
 #define KLINIT __attribute__((constructor(1), used, noinline))
 
+#define KDINIT __attribute__((constructor(2), used, noinline))
+
 #define Assert(expr, str) _Assert((expr), #expr, str, __FILE__, __LINE__)
 
 struct Registers
@@ -75,6 +77,8 @@ void FlagsSet(uint64_t flags);
 void KernelEarlyInit();
 
 void KernelLateInit();
+
+void KernelDeviceInit();
 
 void KernelMain();
 
