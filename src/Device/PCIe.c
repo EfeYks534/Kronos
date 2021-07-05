@@ -179,17 +179,17 @@ struct PCIDevice *PCIDeviceCache(struct PCIAddress loc)
 
 	uint32_t *dev = (uint32_t*) PCIDeviceGet(loc);
 
-	uint32_t *cached = calloc(1, sizeof(struct PCIDevice));
+	struct PCIDevice *cached = calloc(1, sizeof(struct PCIDevice));
 
 	for(size_t i = 0; i < 16; i++)
-		cached[i] = MMRead32(&dev[i]);
+		((uint32_t*)cached)[i] = MMRead32(&dev[i]);
 
 	bucket->loc[bucket->count] = loc;
-	bucket->dev[bucket->count] = (struct PCIDevice*) cached;
+	bucket->dev[bucket->count] = cached;
 
 	bucket->count++;
 
 	Unlock(&pci_cache_lock);
 
-	return (struct PCIDevice*) cached;
+	return cached;
 }

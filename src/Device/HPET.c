@@ -62,7 +62,7 @@ struct HPETHandler
 		size_t periodic :  1;
 	} PACKED;
 
-	size_t counter;
+	size_t expected;
 
 	void (*handler) (struct DevTimer*);
 };
@@ -103,22 +103,23 @@ static void HPETHandler(struct Registers *regs)
 		return;
 	}
 
-	Lock(&timer->dev.lock);
-
 	struct HPETState *state = timer->state;
+
+	size_t time = (MMRead64(&state->regs[HPET_COUNTER]) * state->period) / 1000000;
 
 
 	for(int i = 0; i < state->hand_count; i++) {
 		struct HPETHandler *hand = &state->handlers[i];
 
-		if(--hand->counter == 0) {
+		if(hand->expected < time) {
 			void (*h)(struct DevTimer*) = hand->handler;
-			hand->counter = hand->time;
+			hand->expected = time + hand->time;
 
 
-			if(!hand->periodic && i < (state->hand_count - 1)) {
-				for(int j = i; j < state->hand_count - 2; j++)
-					state->handlers[j] = state->handlers[j + 1];
+			if(!hand->periodic) {
+				if(i < (state->hand_count - 1))
+					for(int j = i; j < state->hand_count - 2; j++)
+						state->handlers[j] = state->handlers[j + 1];
 
 				state->hand_count--;
 			}
@@ -126,9 +127,6 @@ static void HPETHandler(struct Registers *regs)
 			h(timer);
 		}
 	}
-
-
-	Unlock(&timer->dev.lock);
 
 	APICEOI();
 
@@ -202,8 +200,10 @@ void HPETOneShot(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t 
 
 	struct HPETHandler handler = (struct HPETHandler) { 0 };
 
-	handler.time     = ticks;
-	handler.counter  = ticks;
+	size_t time = (MMRead64(&state->regs[HPET_COUNTER]) * state->period) / 1000000;
+
+	handler.time     = ticks * HPET_RATE;
+	handler.expected = time + handler.time;
 	handler.periodic = 0;
 	handler.handler  = hand;
 
@@ -231,8 +231,10 @@ void HPETPeriodic(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t
 
 	struct HPETHandler handler = (struct HPETHandler) { 0 };
 
-	handler.time     = ticks;
-	handler.counter  = ticks;
+	size_t time = (MMRead64(&state->regs[HPET_COUNTER]) * state->period) / 1000000;
+
+	handler.time     = ticks * HPET_RATE;
+	handler.expected = time + handler.time;
 	handler.periodic = 1;
 	handler.handler  = hand;
 
@@ -300,7 +302,7 @@ static KLINIT void HPETInit()
 	tn_cfg.int_type_cnf = 0;
 
 
-	uint64_t vec = IDTEntryAlloc(IDT_ATTR_PRESENT | IDT_ATTR_TRAP, HPETHandler);
+	uint64_t vec = IDTEntryAlloc(IDT_ATTR_PRESENT | IDT_ATTR_INTR, HPETHandler);
 
 	uint64_t tn_fsb = 0;
 
