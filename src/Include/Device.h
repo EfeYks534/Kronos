@@ -63,11 +63,12 @@ struct DevTimer
 
 	void *state;
 
-	void    (*reset) (struct DevTimer*);
-	size_t   (*time) (struct DevTimer*);
-	size_t   (*rate) (struct DevTimer*);
-	void (*one_shot) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
-	void (*periodic) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
+	void      (*reset) (struct DevTimer*);
+	size_t     (*time) (struct DevTimer*);
+	size_t     (*rate) (struct DevTimer*);
+	size_t (*one_shot) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
+	size_t (*periodic) (struct DevTimer*, void (*)(struct DevTimer*), size_t);
+	void     (*cancel) (struct DevTimer*, size_t);
 
 	// `time()` returns the amount of  nanoseconds since this timer
 	// has  been last  reset. `reset()` resets the timer back to 0.
@@ -77,7 +78,9 @@ struct DevTimer
 
 	// Both `one_shot()` and `periodic()` take ticks as an argument,
 	// not nanoseconds. The tick rate can be found in `rate()` which
-	// returns the rate in nanoseconds.
+	// returns the rate in nanosecond. `one_shot()` and `periodic()`
+	// both return a registration id, they can be cancelled by `canc
+	// el()`
 };
 
 void DeviceRegister(uint64_t category, struct Device *dev);

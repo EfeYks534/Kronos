@@ -63,6 +63,7 @@ struct HPETHandler
 	} PACKED;
 
 	size_t expected;
+	size_t       id;
 
 	void (*handler) (struct DevTimer*);
 };
@@ -75,6 +76,7 @@ struct HPETState
 	size_t       freq;
 	size_t     period;
 	size_t hand_count;
+	size_t    hand_id;
 
 	struct HPETHandler handlers[256];
 };
@@ -131,8 +133,6 @@ static void HPETHandler(struct Registers *regs)
 	APICEOI();
 
 	HPETTick(state, HPET_RATE);
-
-	// TODO: Schedule here
 }
 
 void HPETReset(struct DevTimer *timer)
@@ -183,19 +183,19 @@ size_t HPETRate(struct DevTimer *timer)
 	return HPET_RATE;
 }
 
-void HPETOneShot(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t ticks)
+size_t HPETOneShot(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t ticks)
 {
 	Lock(&timer->dev.lock);
 
 	if(!timer->dev.enabled) {
 		Unlock(&timer->dev.lock);
-		return;
+		return -1ULL;
 	}
 
 	struct HPETState *state = timer->state;
 
 	if(state->hand_count >= 256) {
-		return;
+		return -1ULL;
 	}
 
 	struct HPETHandler handler = (struct HPETHandler) { 0 };
@@ -206,27 +206,28 @@ void HPETOneShot(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t 
 	handler.expected = time + handler.time;
 	handler.periodic = 0;
 	handler.handler  = hand;
+	handler.id       = state->hand_id++;
 
 	state->handlers[state->hand_count++] = handler;
 
 	Unlock(&timer->dev.lock);
 
-	return;
+	return handler.id;
 }
 
-void HPETPeriodic(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t ticks)
+size_t HPETPeriodic(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t ticks)
 {
 	Lock(&timer->dev.lock);
 
 	if(!timer->dev.enabled) {
 		Unlock(&timer->dev.lock);
-		return;
+		return -1ULL;
 	}
 
 	struct HPETState *state = timer->state;
 
 	if(state->hand_count >= 256) {
-		return;
+		return -1ULL;
 	}
 
 	struct HPETHandler handler = (struct HPETHandler) { 0 };
@@ -237,13 +238,40 @@ void HPETPeriodic(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_t
 	handler.expected = time + handler.time;
 	handler.periodic = 1;
 	handler.handler  = hand;
+	handler.id       = state->hand_id++;
 
 	state->handlers[state->hand_count++] = handler;
 
 	Unlock(&timer->dev.lock);
 
-	return;
+	return handler.id;
 }
+
+void HPETCancel(struct DevTimer *timer, size_t id)
+{
+	Lock(&timer->dev.lock);
+
+	if(!timer->dev.enabled) {
+		Unlock(&timer->dev.lock);
+		return;
+	}
+
+	struct HPETState *state = timer->state;
+
+	for(size_t i = 0; i < state->hand_count; i++)
+		if(state->handlers[i].id == id) {
+			if(i < (state->hand_count - 1))
+				for(int j = i; j < state->hand_count - 2; j++)
+					state->handlers[j] = state->handlers[j + 1];
+
+			state->hand_count--;
+		}
+
+			
+
+	Unlock(&timer->dev.lock);
+}
+
 
 
 static KLINIT void HPETInit()
@@ -259,6 +287,7 @@ static KLINIT void HPETInit()
 	timer->time     = HPETTime;
 	timer->one_shot = HPETOneShot;
 	timer->periodic = HPETPeriodic;
+	timer->cancel   = HPETCancel;
 
 	struct HPETState *state = calloc(1, sizeof(struct HPETState));
 

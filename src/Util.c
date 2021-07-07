@@ -17,20 +17,8 @@ void Sleep(size_t nsecs)
 
 	size_t time = timer->time(timer) + nsecs;
 
-	if(nsecs > 1000000) {
-		while(time > timer->time(timer))
-			Yield();
-	} else {
-		asm volatile("cli");
-
-		while(time > timer->time(timer))
-			asm volatile("nop");
-
-		int ifl = (FlagsGet() >> 9) & 1;
-
-		if(ifl)
-			asm volatile("sti");
-	}
+	while(time > timer->time(timer))
+		asm volatile("nop");
 }
 
 void _Assert(int expr, const char *sexpr, const char *str, char *file, int line)
