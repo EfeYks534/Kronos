@@ -10,8 +10,10 @@ static uint64_t idt_bitmap[4] = { 0 };
 
 uintptr_t idt_handlers[256] = { 0 };
 
+uint64_t idt_args[256] = { 0 };
 
-uint8_t IDTEntryAlloc(uint8_t attr, void (*handler)(struct Registers*))
+
+uint8_t IDTEntryAlloc(uint8_t attr, uint64_t arg, void (*handler)(struct Registers*, uint64_t))
 {
 	for(int i = 0; i < 4; i++) {
 		if(idt_bitmap[i] == 0) continue;
@@ -20,12 +22,11 @@ uint8_t IDTEntryAlloc(uint8_t attr, void (*handler)(struct Registers*))
 
 		uint8_t index = i * 64 + bit;
 
-		IDTEntrySet(index, attr, handler);
+		IDTEntrySet(index, attr, arg, handler);
 
 		return index;
 	}
 
-	Panic(NULL, "Out of IDT entries");
 	return 0;
 }
 
@@ -39,7 +40,7 @@ void IDTEntryFree(uint8_t vector)
 	idt_entries[vector].flags &= ~IDT_ATTR_PRESENT;
 }
 
-void IDTEntrySet(uint8_t vector, uint8_t attr, void (*handler)(struct Registers*))
+void IDTEntrySet(uint8_t vector, uint8_t attr, uint64_t arg, void (*hand)(struct Registers*, uint64_t))
 {
 	if((idt_bitmap[vector / 64] & (1ULL << (vector % 64))) == 0)
 		Panic(NULL, "Tried to change already used IDT entry");
@@ -48,10 +49,11 @@ void IDTEntrySet(uint8_t vector, uint8_t attr, void (*handler)(struct Registers*
 
 	idt_entries[vector].flags = attr;
 
-	idt_handlers[vector] = (uintptr_t) handler;
+	idt_handlers[vector] = (uintptr_t) hand;
+	idt_args[vector]     = arg;
 }
 
-static void IDTDefaultHandler(struct Registers *regs)
+static void IDTDefaultHandler(struct Registers *regs, uint64_t arg)
 {
 	Panic(regs, "Unhandled interrupt %l", regs->vector);
 }

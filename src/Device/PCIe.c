@@ -138,6 +138,27 @@ size_t PCIDeviceCount()
 	return pci_dev_count;
 }
 
+void *PCIBar(struct PCIDevice *dev, size_t bir)
+{
+	bir = bir % 6;
+
+	uint64_t bar = MMRead32(&dev->bar[bir]);
+
+	if(bar == 0) return NULL;
+
+
+	if(bar & 1) return NULL;
+
+
+	size_t base = bar & (~15ULL);
+
+	if(bar & 4)
+		bar += (uint64_t) MMRead32(&dev->bar[bir + 1]) << 32;
+
+	return PhysOffset(base);
+}
+
+
 struct Bucket
 {
 	struct PCIDevice *dev[32];

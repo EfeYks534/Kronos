@@ -90,12 +90,11 @@ static void HPETTick(struct HPETState *state, size_t nsecs)
 	MMWrite64(&state->regs[HPET_TIMER_COMPAR(0)], MMRead64(&state->regs[HPET_COUNTER]) + nsecs);
 }
 
-static void HPETHandler(struct Registers *regs)
+static void HPETHandler(struct Registers *regs, uint64_t arg)
 {
 	struct DevTimer *timer = DeviceGet(DEV_CATEGORY_TIMER, DEV_TYPE_HPET, NULL);
 
 	if(timer == NULL) {
-		Error("HPET: Can't find timer device\n");
 		APICEOI();
 		return;
 	}
@@ -195,6 +194,7 @@ size_t HPETOneShot(struct DevTimer *timer, void (*hand)(struct DevTimer*), size_
 	struct HPETState *state = timer->state;
 
 	if(state->hand_count >= 256) {
+		Unlock(&timer->dev.lock);
 		return -1ULL;
 	}
 
@@ -297,14 +297,23 @@ static KLINIT void HPETInit()
 
 	// Sanity check the HPET table
 
-	if(state->hpet == NULL)
+	if(state->hpet == NULL) {
+		free(state);
+		free(timer);
 		return;
+	}
 
-	if(state->hpet->address.space_id != 0)
+	if(state->hpet->address.space_id != 0) {
+		free(state);
+		free(timer);
 		return;
+	}
 
-	if(state->hpet->address.addr == 0)
+	if(state->hpet->address.addr == 0) {
+		free(state);
+		free(timer);
 		return;
+	}
 
 	state->regs = PhysOffset(state->hpet->address.addr);
 
@@ -313,8 +322,11 @@ static KLINIT void HPETInit()
 
 	*((uint64_t*) &cap) = MMRead64(&state->regs[HPET_CAPID]);
 
-	if(cap.rev_id == 0)
+	if(cap.rev_id == 0) {
+		free(state);
+		free(timer);
 		return;
+	}
 
 	state->freq   = 0x38D7EA4C68000 / cap.counter_clk_period;
 	state->period = cap.counter_clk_period;
@@ -331,7 +343,13 @@ static KLINIT void HPETInit()
 	tn_cfg.int_type_cnf = 0;
 
 
-	uint64_t vec = IDTEntryAlloc(IDT_ATTR_PRESENT | IDT_ATTR_INTR, HPETHandler);
+	uint64_t vec = IDTEntryAlloc(IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, HPETHandler);
+
+	if(vec == 0) {
+		free(state);
+		free(timer);
+		return;
+	}
 
 	uint64_t tn_fsb = 0;
 

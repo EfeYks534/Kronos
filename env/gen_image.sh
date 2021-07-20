@@ -29,3 +29,5 @@ sudo losetup --detach $LOOPDEV
 rm -rf ./mount
 
 ./limine/limine-install kronos.img
+
+qemu-img convert -f raw -O vmdk kronos.img kronos.vmdk

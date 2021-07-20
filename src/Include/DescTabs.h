@@ -59,11 +59,11 @@ void GDTInstall();
 void GDTLoad();
 
 
-uint8_t IDTEntryAlloc(uint8_t attr, void (*handler)(struct Registers*));
+uint8_t IDTEntryAlloc(uint8_t attr, uint64_t arg, void (*handler)(struct Registers*, uint64_t));
 
 void IDTEntryFree(uint8_t vector);
 
-void IDTEntrySet(uint8_t index, uint8_t attr, void (*handler)(struct Registers*));
+void IDTEntrySet(uint8_t index, uint8_t attr, uint64_t arg, void (*hand)(struct Registers*, uint64_t));
 
 void IDTClean();
 

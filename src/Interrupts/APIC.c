@@ -19,7 +19,7 @@ static uint8_t *lapic_addr = NULL;
 static size_t spur_count = 0;
 
 
-static void SpurHandler(struct Registers *regs)
+static void SpurHandler(struct Registers *regs, uint64_t arg)
 {
 	spur_count++;
 	APICEOI();
@@ -58,7 +58,7 @@ static void KLINIT APICInit()
 	Info("LAPIC: Base address identified as %xl\n", MPhys(lapic_addr));
 
 
-	IDTEntrySet(0xFF, IDT_ATTR_PRESENT | IDT_ATTR_INTR, SpurHandler);
+	IDTEntrySet(0xFF, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, SpurHandler);
 
 	uint32_t spur = MMRead32(&lapic_addr[0xF0]);
 

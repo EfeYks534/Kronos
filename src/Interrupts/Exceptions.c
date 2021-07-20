@@ -28,7 +28,7 @@ const char *exceptions[] =
 	"Security exception"
 };
 
-static void ExceptionHandler(struct Registers *regs)
+static void ExceptionHandler(struct Registers *regs, uint64_t arg)
 {
 	uint64_t vector = regs->vector > 20 ? 21 : regs->vector;
 	uint64_t error  = regs->error;
@@ -55,5 +55,5 @@ static void ExceptionHandler(struct Registers *regs)
 void ExceptionsLoad()
 {
 	for(int i = 0; i < 32; i++)
-		IDTEntrySet(i, IDT_ATTR_PRESENT | IDT_ATTR_TRAP, ExceptionHandler);
+		IDTEntrySet(i, IDT_ATTR_PRESENT | IDT_ATTR_TRAP, 0, ExceptionHandler);
 }

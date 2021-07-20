@@ -3,6 +3,7 @@ if(!(argc - 2)) {
 		$"rm -f ../bin/*.o";
 		$"rm -f ../env/*.bin";
 		$"rm -f ../env/*.img";
+		$"rm -f ../env/*.vmdk";
 		#exit 0;
 	}
 	$"echo Undefined rule " + arg1 &;

@@ -34,6 +34,7 @@ GDTFlush:
 	RET
 
 extern idt_handlers
+extern idt_args
 
 ; void IDTCommonHandlerN();
 
@@ -49,6 +50,8 @@ IDTCommonHandler%1:
 	CLD
 
 	MOV RDI, RSP ; Each handler takes a struct Registers* as an argument
+
+	MOV RSI, QWORD [idt_args + %1 * 8] ; Each handler takes a uint64_t as an argument
 
 	MOV RAX, QWORD [idt_handlers + %1 * 8] ; Get the handler into RAX
 	CALL RAX
@@ -70,6 +73,8 @@ IDTCommonHandler%1:
 	CLD
 
 	MOV RDI, RSP ; Each handler takes a struct Registers* as an argument
+
+	MOV RSI, QWORD [idt_args + %1 * 8] ; Each handler takes a uint64_t as an argument
 
 	MOV RAX, QWORD [idt_handlers + %1 * 8] ; Get the handler into RAX
 	CALL RAX
