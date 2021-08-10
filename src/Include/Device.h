@@ -16,6 +16,8 @@
 
 #define DEV_TYPE_HPET   0x0 // HPET timer
 
+#define DEV_TYPE_NVME   0x0 // NVMe I/O controller
+
 struct Device
 {
 	uint64_t     type;
@@ -82,6 +84,17 @@ struct DevTimer
 	// both return a registration id, they can be cancelled by `canc
 	// el()`
 };
+
+struct DevStorage
+{
+	struct Device dev;
+
+	void *state;
+
+	size_t (*write) (struct DevStorage*, void*, size_t, size_t);
+	size_t  (*read) (struct DevStorage*, void*, size_t, size_t);
+};
+
 
 void DeviceRegister(uint64_t category, struct Device *dev);
 

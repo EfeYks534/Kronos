@@ -1,5 +1,5 @@
-if(!(argc - 2)) {
-	if(arg1 / "clean") {
+if(argc == 2) {
+	if(arg1 == "clean") {
 		$"rm -f ../bin/*.o";
 		$"rm -f ../env/*.bin";
 		$"rm -f ../env/*.img";
@@ -36,7 +36,7 @@ let num = 0;
 	let fname = dir + "/" + file;
 
 	status = status +
-	($cc + " -c " + fname + " " + cflags + " -o ../bin/" + (file - 2) + num + ".o");
+	($cc + " -c " + fname + " " + cflags + " -o ../bin/" + cut(file, 0, 2) + num + ".o");
 	$"echo " &;
 
 	num = num + 1;
@@ -47,7 +47,7 @@ let num = 0;
 	let fname = dir + "/" + file;
 
 	status = status +
-	($as + " " + fname + " -o ../bin/" + (file - 4) + num + ".o " + asmflags);
+	($as + " " + fname + " -o ../bin/" + cut(file, 0, 4) + num + ".o " + asmflags);
 
 	$"echo " &;
 

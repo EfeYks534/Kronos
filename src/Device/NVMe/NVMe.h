@@ -1,9 +1,11 @@
 #pragma once
 
-#include <Common.h>
 #include <Peripheral.h>
+#include <Common.h>
+#include <Device.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 // #define NVME_DEBUG to enable debug messages
 
@@ -21,6 +23,23 @@
 
 #define NVME_QUEUE_MAX 16
 #define NVME_NS_MAX    16
+
+#define NVME_ADMIN_DELIOSQ  0x00
+#define NVME_ADMIN_NEWIOSQ  0x01
+#define NVME_ADMIN_LOGPAGE  0x02
+#define NVME_ADMIN_DELIOCQ  0x04
+#define NVME_ADMIN_NEWIOCQ  0x05
+#define NVME_ADMIN_IDENTIFY 0x06
+#define NVME_ADMIN_ABORT    0x08
+
+#define NVME_NVM_FLUSH      0x00
+#define NVME_NVM_WRITE      0x01
+#define NVME_NVM_READ       0x02
+#define NVME_NVM_WRITEUC    0x04
+#define NVME_NVM_COMPARE    0x05
+#define NVME_NVM_WRITEZR    0x08
+
+
 
 struct NVMeCap
 {
@@ -143,13 +162,21 @@ struct NVMeResponse
 	} PACKED;
 } PACKED;
 
+struct NVMeRequest
+{
+	uint16_t   cid;
+	uint8_t *phase;
+
+	struct NVMeResponse *res;
+} PACKED;
+
 struct NVMeQueue
 {
-	uint16_t qid;
-	uint16_t qsz;
+	uint16_t  qid;
+	uint16_t  qsz;
 
-	struct NVMeCommand  *sq;
-	struct NVMeResponse *cq;
+	volatile struct NVMeCommand  *sq;
+	volatile struct NVMeResponse *cq;
 
 	size_t tail;
 	size_t head;
@@ -160,11 +187,40 @@ struct NVMeQueue
 	uint16_t cmdid;
 	int64_t   lock;
 	size_t      iv;
+	uint8_t  phase;
+
+	struct Queue requests;
 };
+
+struct NVMeLBAFormat
+{
+	uint32_t    ms : 16;
+	uint32_t lbads :  8;
+	uint32_t    rp :  2;
+	uint32_t  rsvd :  6;
+} PACKED;
+
+struct NVMeNamespaceID
+{
+	uint64_t       nsze;
+	uint64_t       ncap;
+	uint64_t       nuse;
+	uint8_t      nsfeat;
+	uint8_t       nlbaf;
+	uint8_t       flbas;
+	uint8_t          mc;
+	uint8_t unused[100];
+
+	struct NVMeLBAFormat lbaf[16];
+} PACKED;
 
 struct NVMeNamespace
 {
-	uint32_t nsid;
+	uint32_t    nsid;
+	size_t lba_count;
+	size_t  lba_size;
+
+	struct NVMeNamespaceID *ident;
 };
 
 struct NVMeInterrupt
@@ -184,6 +240,7 @@ struct NVMeDevice
 	size_t            ns_count;
 	size_t            iv_count;
 	int64_t               lock;
+	uint64_t              busy;
 
 	struct NVMeQueue         *queues[NVME_QUEUE_MAX];
 	struct NVMeInterrupt  interrupts[NVME_QUEUE_MAX];
@@ -192,10 +249,39 @@ struct NVMeDevice
 
 struct NVMeState
 {
-	struct NVMeDevice *device;
-
-	uint32_t nsid;
+	struct NVMeDevice *dev;
+	size_t ns;
 };
+
+static inline uint32_t *NVMeTDBL(struct NVMeDevice *dev, size_t q)
+{
+	uintptr_t base = (uintptr_t) dev->nvme;
+
+	base += 0x1000 + ((2*q) * (4ULL << dev->nvme_cap.dstrd));
+
+	return (uint32_t*) base;
+}
+
+static inline uint32_t *NVMeHDBL(struct NVMeDevice *dev, size_t q)
+{
+	uintptr_t base = (uintptr_t) dev->nvme;
+
+	base += 0x1000 + ((2*q + 1) * (4ULL << dev->nvme_cap.dstrd));
+
+	return (uint32_t*) base;
+}
+
+size_t NVMeVWrite(struct DevStorage *stor, void *data, size_t addr, size_t size);
+
+size_t NVMeVRead(struct DevStorage *stor, void *data, size_t addr, size_t size);
+
+struct NVMeNamespace *NVMeValidateNS(struct NVMeDevice *dev, uint32_t nsid);
+
+size_t NVMeCreateQueue(struct NVMeDevice *dev);
+
+struct NVMeInterrupt *NVMeIntAlloc(struct NVMeDevice *dev);
+
+void NVMeHandler(struct Registers *regs, uint64_t arg);
 
 int NVMeEnable(struct NVMeDevice *dev);
 
@@ -203,6 +289,6 @@ int NVMeDisable(struct NVMeDevice *dev);
 
 void NVMeInitDev(struct PCIDevice *pci);
 
-int32_t NVMeSubmit(struct NVMeQueue *q, struct NVMeCommand *cmd);
+int32_t NVMeThrow(struct NVMeQueue *q, struct NVMeCommand *cmd);
 
-int NVMeConsume(struct NVMeQueue *q, struct NVMeResponse *res, uint16_t cmd);
+int32_t NVMeSubmit(struct NVMeQueue *q, struct NVMeCommand *cmd, struct NVMeResponse *res);

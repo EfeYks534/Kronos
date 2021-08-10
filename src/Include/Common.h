@@ -116,3 +116,13 @@ static inline size_t log2(size_t num)
 {
 	return num == 0 ? 0 : 63 - __builtin_clzll(num);
 }
+
+static inline size_t min(size_t a, size_t b)
+{
+	return a < b ? a : b;
+}
+
+static inline size_t max(size_t a, size_t b)
+{
+	return a > b ? a : b;
+}

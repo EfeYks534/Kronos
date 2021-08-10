@@ -97,4 +97,4 @@ void *PCIBar(struct PCIDevice *dev, size_t bar);
 
 int MSIEnable(struct PCIDevice *dev, size_t msi, size_t vector);
 
-void MSIDisable(struct PCIDevice *dev, size_t msi);
+int MSIDisable(struct PCIDevice *dev, size_t msi);
