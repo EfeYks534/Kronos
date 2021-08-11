@@ -2,6 +2,15 @@
 #include <Core.h>
 #include <Peripheral.h>
 
+#ifndef MSI_DEBUG
+
+#define Error(f, ...)
+#define Info(f, ...)
+#define Warn(f, ...)
+
+#endif
+
+
 struct MSICap
 {
 	uint16_t   mid;

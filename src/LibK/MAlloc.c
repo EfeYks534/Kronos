@@ -28,6 +28,8 @@ static uint64_t blk_addr = 0;
 
 static int64_t heap_lock = 0;
 
+static size_t total_alloc = 0;
+
 
 static struct Block *BlkAlloc(uint8_t group)
 {
@@ -123,6 +125,8 @@ void *malloc(size_t n)
 
 	HeapMap(addr, npages);
 
+	total_alloc += 1ULL << (group + 6);
+
 	Unlock(&heap_lock);
 
 	return addr;
@@ -178,4 +182,9 @@ void free(void *ptr)
 
 	Panic(NULL, "Can't free unallocated address %xl", ptr);
 	Unlock(&heap_lock);
+}
+
+size_t MAllocTotal()
+{
+	return total_alloc;
 }

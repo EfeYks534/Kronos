@@ -20,10 +20,11 @@ void KernelInit()
 
 	Log("\n");
 
-	Info("Total memory   : %l KiBs\n", sm_info->pm_total  / 1024);
-	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable / 1024);
-	Info("Used memory    : %l KiBs\n", sm_info->pm_used   / 1024);
-	Info("Virtual memory : %l KiBs\n\n", sm_info->vm_total  * 4096 / 1024);
+	Info("Total memory   : %l KiBs\n", sm_info->pm_total   / 1024);
+	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable  / 1024);
+	Info("Used memory    : %l KiBs\n", sm_info->pm_used    / 1024);
+	Info("Virtual memory : %l KiBs\n\n", sm_info->vm_total * 4096 / 1024);
+	Info("MAlloc memory  : %l KiBs\n\n", MAllocTotal()     / 1024);
 
 	Info("ACPI system descriptor tables:\n");
 
@@ -48,8 +49,6 @@ void KernelInit()
 	asm volatile("sti");
 
 	KernelDeviceInit();
-
-	
 }
 
 void KernelIdle(uint64_t is_idle)

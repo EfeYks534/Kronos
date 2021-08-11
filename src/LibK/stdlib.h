@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
 struct Queue
 {
 	void   *items;
@@ -75,3 +76,5 @@ void *malloc(size_t n);
 void *calloc(size_t nmemb, size_t size);
 
 void free(void *ptr);
+
+size_t MAllocTotal();

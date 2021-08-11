@@ -17,7 +17,7 @@ static const char *type_names[][7] =
 {
 	{"."},
 	{"."}, // Graphics
-	{"."}, // Storage
+	{"Non Volatile Memory"}, // Storage
 	{"."}, // Audio
 	{"Serial"}, // Serial
 	{"Graphics Terminal"}, // Terminal

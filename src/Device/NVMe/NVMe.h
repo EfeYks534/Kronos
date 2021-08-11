@@ -9,7 +9,7 @@
 
 // #define NVME_DEBUG to enable debug messages
 
-#define NVME_DEBUG
+// #define NVME_DEBUG
 
 
 #ifndef NVME_DEBUG

@@ -10,6 +10,8 @@ if(argc == 2) {
 	#exit 1;
 }
 
+let time_start = uptime();
+
 let avx512 = "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -mno-80387";
 
 let cc      = "clang";
@@ -33,23 +35,33 @@ let num = 0;
 
 #foreach("c")
 {
-	let fname = dir + "/" + file;
+	let fname   = dir + "/" + file;
+	let objfile = "../bin/" + cut(file, 0, 2) + num + ".o";
 
-	status = status +
-	($cc + " -c " + fname + " " + cflags + " -o ../bin/" + cut(file, 0, 2) + num + ".o");
-	$"echo " &;
+	if(newer(fname, objfile)) {
+
+		status = status +
+		($cc + " -c " + fname + " " + cflags + " -o " + objfile);
+		$"echo " &;
+
+	}
 
 	num = num + 1;
 }
 
 #foreach("asm")
 {
-	let fname = dir + "/" + file;
+	let fname   = dir + "/" + file;
+	let objfile = "../bin/" + cut(file, 0, 4) + num + ".o";
 
-	status = status +
-	($as + " " + fname + " -o ../bin/" + cut(file, 0, 4) + num + ".o " + asmflags);
+	if(newer(fname, objfile)) {
 
-	$"echo " &;
+		status = status +
+		($as + " " + fname + " -o " + objfile + " " + asmflags);
+
+		$"echo " &;
+
+	}
 
 	num = num + 1;
 }
@@ -63,6 +75,7 @@ if(status) {
 	$"echo " &;
 }
 
-$"rm -f ../bin/*.o";
+let time_end = uptime();
+$"echo Compilation lasted " + (time_end - time_start) + " seconds.." &;
 
 #exit 0;
