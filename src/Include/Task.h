@@ -12,7 +12,6 @@ struct Task
 	uint64_t               tid; // Task ID
 	char              name[64]; // Task name (null-terminated string)
 	size_t               timer; // Keeps track of time in nanoseconds
-	size_t             quantum; // Nanoseconds until next task switch, counts down
 	size_t             tickets; // How many lottery tickets this task has
 
 	struct

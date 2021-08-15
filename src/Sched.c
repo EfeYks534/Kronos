@@ -111,9 +111,6 @@ static void Switch(struct Task *task, struct Registers *regs)
 
 	task->running = 1;
 
-	task->quantum = 5000000 / (task_count == 0 ? 1 : task_count);
-
-
 	MSwitch(task->space);
 
 	Unlock(&tasks_lock);
