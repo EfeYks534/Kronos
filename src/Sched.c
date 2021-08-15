@@ -192,7 +192,7 @@ struct Task *TaskSpawn(void (*ent)(), uint64_t arg, size_t tickets)
 
 	task->regs.ss    = 0x10;
 	task->regs.rsp   = stack + 16384;
-	task->regs.flags = 1ULL << 21;
+	task->regs.flags = 1ULL << 21 | 1ULL << 9;
 	task->regs.cs    = 0x08;
 	task->regs.rip   = (uintptr_t) ent;
 	task->regs.rdi   = arg;

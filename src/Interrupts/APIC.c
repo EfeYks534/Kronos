@@ -1,7 +1,9 @@
-#include <Common.h>
-#include <Memory.h>
 #include <Peripheral.h>
 #include <DescTabs.h>
+#include <Common.h>
+#include <Memory.h>
+#include <Device.h>
+#include <Task.h>
 #include <ACPI.h>
 #include <APIC.h>
 
@@ -24,6 +26,14 @@ static void SpurHandler(struct Registers *regs, uint64_t arg)
 	spur_count++;
 	APICEOI();
 }
+
+static void TimerHandler(struct Registers *regs, uint64_t arg)
+{
+	APICEOI(); // This ordering will bite me in the ass later
+
+	Schedule(regs);
+}
+
 
 static void KLINIT APICInit()
 {
@@ -59,15 +69,29 @@ static void KLINIT APICInit()
 
 
 	IDTEntrySet(0xFF, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, SpurHandler);
+	IDTEntrySet(0xFE, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, TimerHandler);
 
-	uint32_t spur = MMRead32(&lapic_addr[0xF0]);
+	uint32_t spur = MMRead32(&lapic_addr[LAPIC_SPUR]);
 
-	MMWrite32(&lapic_addr[0xF0], spur | (1ULL << 8) | 0xFF);
+	MMWrite32(&lapic_addr[LAPIC_SPUR], spur | (1ULL << 8) | 0xFF);
+}
+
+void APICTimerEnable()
+{
+	MMWrite32(&lapic_addr[LAPIC_DIVCFG], 3); // Divide by 16
+	MMWrite32(&lapic_addr[LAPIC_ICOUNT], 0xFFFFFFFF);
+
+	Sleep(10000000); // Sleep 10 milliseconds
+
+	size_t period = 0xFFFFFFFF - MMRead32(&lapic_addr[LAPIC_CCOUNT]);
+
+	MMWrite32(&lapic_addr[LAPIC_LVT],    LAPIC_INTN | (1ULL << 17));
+	MMWrite32(&lapic_addr[LAPIC_ICOUNT], period);
 }
 
 void APICEOI()
 {
-	MMWrite32(&lapic_addr[0xB0], 0);
+	MMWrite32(&lapic_addr[LAPIC_EOI], 0);
 }
 
 void ICRSend(struct ICR *icr);

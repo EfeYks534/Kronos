@@ -1,6 +1,7 @@
 #include <Common.h>
 #include <Core.h>
 #include <ACPI.h>
+#include <APIC.h>
 #include <Device.h>
 #include <Memory.h>
 #include <Stivale2.h>
@@ -11,6 +12,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+static int late_init = 0;
+
+void Peter()
+{
+	while(1) {
+		Info("Peter %u here!\n", ProcCurrent()->task->tid);
+	}
+}
 
 void KernelInit()
 {
@@ -43,12 +53,23 @@ void KernelInit()
 
 	KernelLateInit();
 
-	Assert(DevicePrimary(DEV_CATEGORY_TIMER) != NULL,
-			"System can't run without a primary timer");
+	struct DevTimer *timer = DevicePrimary(DEV_CATEGORY_TIMER);
+	Assert(timer != NULL, "System can't run without a primary timer");
 
 	asm volatile("sti");
 
+	APICTimerEnable();
+	late_init = 1;
+
 	KernelDeviceInit();
+
+	struct Task *t1 = TaskSpawn(Peter, 0, TICKET_IDEAL);
+	struct Task *t2 = TaskSpawn(Peter, 0, TICKET_IDEAL);
+
+	t1->core = ProcBSP();
+	t2->core = ProcBSP();
+
+	Info("Created tasks %u and %u\n", t1->tid, t2->tid);
 }
 
 void KernelIdle(uint64_t is_idle)
@@ -69,8 +90,19 @@ void KernelIdle(uint64_t is_idle)
 			KernelInit();
 		}
 
-		while(1)
+
+		int is_init = 0;
+
+		while(1) {
+			if(late_init && !is_init && ProcID() != ProcBSP()) {
+				is_init = 1;
+				APICTimerEnable();
+				asm volatile("sti");
+			}
+
+			asm volatile("hlt");
 			Yield();
+		}
 	}
 
 	struct Task *task = calloc(1, sizeof(struct Task));

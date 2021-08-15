@@ -75,7 +75,6 @@ if(status) {
 	$"echo " &;
 }
 
-let time_end = uptime();
-$"echo Compilation lasted " + (time_end - time_start) + " seconds.." &;
+$"echo Compilation lasted " + (uptime() - time_start) + " seconds.." &;
 
 #exit 0;

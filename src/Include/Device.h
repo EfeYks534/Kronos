@@ -83,6 +83,8 @@ struct DevTimer
 	// returns the rate in nanosecond. `one_shot()` and `periodic()`
 	// both return a registration id, they can be cancelled by `canc
 	// el()`
+
+	// Every timer must have at least 100000 ns precision on `time(),`
 };
 
 struct DevStorage
