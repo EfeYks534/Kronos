@@ -22,6 +22,26 @@
 #define IDT_ATTR_TRAP     (IDT_ATTR_INTR | 1)
 #define IDT_ATTR_PRESENT  (1 << 7)
 
+
+struct TSS
+{
+	uint32_t rsvd0;
+	uint64_t  rsp0;
+	uint64_t  rsp1;
+	uint64_t  rsp2;
+	uint64_t rsvd1;
+	uint64_t  ist1;
+	uint64_t  ist2;
+	uint64_t  ist3;
+	uint64_t  ist4;
+	uint64_t  ist5;
+	uint64_t  ist6;
+	uint64_t  ist7;
+	uint64_t rsvd2;
+	uint16_t rsvd3;
+	uint16_t  iobp;
+} PACKED;
+
 struct GDTEntry
 {
 	uint16_t  limit_low;
@@ -31,6 +51,19 @@ struct GDTEntry
 	uint8_t limit_upper : 4;
 	uint8_t       flags : 4;
 	uint8_t  base_upper;
+} PACKED;
+
+struct TSSEntry
+{
+	uint16_t  limit_low;
+	uint16_t   base_low;
+	uint8_t    base_mid;
+	uint8_t      access;
+	uint8_t limit_upper : 4;
+	uint8_t       flags : 4;
+	uint8_t  base_upper;
+	uint32_t  base_high;
+	uint32_t       rsvd;
 } PACKED;
 
 struct DescPointer
@@ -50,6 +83,8 @@ struct IDTEntry
 	uint32_t    zero1;
 } PACKED;
 
+void TSSEntrySet(uint8_t index, uint64_t base, uint32_t limit, uint8_t access, uint8_t flags);
+
 void GDTEntryNew(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 
 void GDTClean();
@@ -65,7 +100,7 @@ void IDTEntryFree(uint8_t vector);
 
 void IDTEntrySet(uint8_t index, uint8_t attr, uint64_t arg, void (*hand)(struct Registers*, uint64_t));
 
-void IDTClean();
+;void IDTClean();
 
 void IDTInstall();
 

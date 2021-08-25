@@ -5,8 +5,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define BLACK    0x000000
 #define RED      0xAA0000
@@ -463,11 +464,6 @@ static void TermWrite(struct DevTerminal *term, const char *str)
 }
 
 
-
-static struct TermState tstate = { BWHITE };
-
-static struct DevTerminal term = { 0 };
-
 static void KEINIT TermInit()
 {
 	struct stivale2_struct_tag_framebuffer *fb;
@@ -477,19 +473,26 @@ static void KEINIT TermInit()
 
 	if(fb->framebuffer_pitch != 4096 || fb->framebuffer_bpp != 32) return;
 
-	tstate.width  = fb->framebuffer_width;
-	tstate.height = fb->framebuffer_height;
+	struct TermState *tstate = calloc(1, sizeof(struct TermState));
 
-	memcpy(term.dev.name, "Terminal", strlen("Terminal"));
+	tstate->color = BWHITE;
 
-	term.dev.type    = DEV_TYPE_GRTERM;
-	term.dev.enabled = 1;
-	term.dev.lock    = 0;
-	term.state       = &tstate;
-	term.fb          = (uint32_t*) fb->framebuffer_addr;
-	term.write       = TermWrite;
+	struct DevTerminal *term = calloc(1, sizeof(struct DevTerminal));
 
-	DeviceRegister(DEV_CATEGORY_TERM, &term.dev);
 
-	DevicePrimarySet(DEV_CATEGORY_TERM, &term.dev);
+	tstate->width  = fb->framebuffer_width;
+	tstate->height = fb->framebuffer_height;
+
+	memcpy(term->dev.name, "Terminal", strlen("Terminal"));
+
+	term->dev.type    = DEV_TYPE_GRTERM;
+	term->dev.enabled = 1;
+	term->dev.lock    = 0;
+	term->state       = tstate;
+	term->fb          = (uint32_t*) fb->framebuffer_addr;
+	term->write       = TermWrite;
+
+	DeviceRegister(DEV_CATEGORY_TERM, &term->dev);
+
+	DevicePrimarySet(DEV_CATEGORY_TERM, &term->dev);
 }

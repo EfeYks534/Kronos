@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define HEAP_BASE  0xFFFF820000400000
+#define HEAP_BASE  0xFFFF821000000000
 #define HEAP_BLK   0xFFFF820000000000
 
 struct Block
@@ -48,7 +48,11 @@ static struct Block *BlkAlloc(uint8_t group)
 	blk->state = 0;
 	blk->mmap  = -1ULL;
 
-	blk_addr += 64 * (1ULL << (blk->group + 6));
+	size_t n = 64ULL * (1ULL << (blk->group + 6));
+
+	n += (ceil(blk_addr, n) * n) - blk_addr;
+
+	blk_addr += n;
 
 	return blk;
 }

@@ -1,6 +1,6 @@
 rm -f kronos.img
 
-dd if=/dev/zero bs=1M count=64 of=./kronos.img
+dd if=/dev/zero bs=1M count=2 of=./kronos.img
 
 parted -s ./kronos.img mklabel msdos
 parted -s ./kronos.img mkpart primary 1 100%

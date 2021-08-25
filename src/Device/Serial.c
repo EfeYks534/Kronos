@@ -93,6 +93,7 @@ void VSerialInit()
 	srcom1.dev.lock    = 0;
 
 	srcom1.port = SERIAL_COM1;
+	SerialInit(SERIAL_COM1);
 
 	srcom1.put   = VSerialPut;
 	srcom1.write = VSerialWrite;

@@ -14,6 +14,16 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+
+#ifndef HPET_DEBUG
+
+#define Error(f, ...)
+#define Info(f, ...)
+#define Warn(f, ...)
+
+#endif
+
+
 #define HPET_RATE 1000000
 
 #define HPET_CAPID   0x000
@@ -300,18 +310,22 @@ static KLINIT void HPETInit()
 	if(state->hpet == NULL) {
 		free(state);
 		free(timer);
+
+		Error("HPET: HPET is NULL\n");
 		return;
 	}
 
 	if(state->hpet->address.space_id != 0) {
 		free(state);
 		free(timer);
+		Error("HPET: HPET address space id is 0\n");
 		return;
 	}
 
 	if(state->hpet->address.addr == 0) {
 		free(state);
 		free(timer);
+		Error("HPET: HPET address space address is NULL\n");
 		return;
 	}
 
@@ -325,6 +339,7 @@ static KLINIT void HPETInit()
 	if(cap.rev_id == 0) {
 		free(state);
 		free(timer);
+		Error("HPET: HPET revision is 0\n");
 		return;
 	}
 
@@ -335,7 +350,12 @@ static KLINIT void HPETInit()
 
 	*((uint64_t*) &tn_cfg) = MMRead64(&state->regs[HPET_TIMER_CONFIG(0)]);
 
-	if(tn_cfg.fsb_int_del_cap != 1) return;
+	if(tn_cfg.fsb_int_del_cap != 1) {
+		free(state);
+		free(timer);
+		Error("HPET: HPET doesn't support FSB\n");
+		return;
+	}
 
 	tn_cfg.int_enb_cnf  = 1;
 	tn_cfg.fsb_en_cnf   = 1;

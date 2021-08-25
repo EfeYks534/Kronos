@@ -54,14 +54,19 @@ static KEINIT void ACPIInit()
 	if(rsdp->revision == 2) {
 		rsdt = PhysOffset(rsdp->xsdt);
 		sdt_count = (rsdt->length - sizeof(struct SDTHeader)) / 8;
+		Info("ACPI: XSDT found (%xl)\n", rsdp->xsdt);
 	} else {
 		rsdt = PhysOffset(rsdp->rsdt);
 		sdt_count = (rsdt->length - sizeof(struct SDTHeader)) / 4;
+		Info("ACPI: RSDT found (%xl)\n", rsdp->rsdt);
 	}	
 }
 
 int ACPIChecksum(void *ptr, size_t size)
 {
+	if(size > 10469376)
+		return 0;
+
 	uint8_t sum = 0;
 
 	for(size_t i = 0; i < size; i++)

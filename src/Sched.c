@@ -1,8 +1,9 @@
-#include <Common.h>
-#include <Core.h>
-#include <Memory.h>
-#include <Task.h>
 #include <Stivale2.h>
+#include <Device.h>
+#include <Common.h>
+#include <Memory.h>
+#include <Core.h>
+#include <Task.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -78,25 +79,38 @@ void TaskAdd(struct Task *task)
 	Unlock(&tasks_lock);
 }
 
+#define RANDBITS0 0x385B4D8F624F9B19ULL
+#define RANDBITS1 0xED32CA69BFBBDD6FULL
+#define RANDBITS2 0xDC6BCBFB0FDF4EFBULL
+#define RANDBITS3 0x398A24ED505550E7ULL
+
 static size_t Random()
 {
-	static size_t  seed = 123456789;
+	struct DevTimer *timer = DevicePrimary(DEV_CATEGORY_TIMER);
 
-	if(seed == 123456789) {
-		struct stivale2_struct_tag_epoch *epoch;
-		epoch = Stivale2GetTag(STIVALE2_STRUCT_TAG_EPOCH_ID);
+	static size_t offset = RANDBITS3;
+	size_t n = 0;
 
-		seed += epoch == NULL ? 0 : epoch->epoch;
-	}
+	if(timer != NULL) {
+		n = timer->time(timer);
+	} else {
+		n += offset;
+		offset++;
+	};
 
-	seed = (6364136223846793005 * seed + 1442695040888963407);
+	n += RANDBITS3 * RANDBITS0;
 
-	size_t shift = (seed >> 32) % 64;
+	n ^= n >> 23;
+	n *= RANDBITS0;
+	n ^= n >> 47;
+	n ^= RANDBITS1 >> (n & 31);
+	n *= RANDBITS2;
+	n ^= n >> 13;
+	n ^= RANDBITS3;
 
-	size_t rand = (seed >> shift) | (seed << (63 - shift));
-
-	return rand;
+	return n;
 }
+
 
 static void Switch(struct Task *task, struct Registers *regs)
 {

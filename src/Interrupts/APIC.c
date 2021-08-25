@@ -72,12 +72,16 @@ static void KLINIT APICInit()
 	IDTEntrySet(0xFE, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, TimerHandler);
 
 	uint32_t spur = MMRead32(&lapic_addr[LAPIC_SPUR]);
-
 	MMWrite32(&lapic_addr[LAPIC_SPUR], spur | (1ULL << 8) | 0xFF);
 }
 
 void APICTimerEnable()
 {
+	uint32_t spur = MMRead32(&lapic_addr[LAPIC_SPUR]);
+	if(((spur >> 8) & 1) == 0)
+		MMWrite32(&lapic_addr[LAPIC_SPUR], spur | (1ULL << 8) | 0xFF);
+
+
 	MMWrite32(&lapic_addr[LAPIC_DIVCFG], 3); // Divide by 16
 	MMWrite32(&lapic_addr[LAPIC_ICOUNT], 0xFFFFFFFF);
 

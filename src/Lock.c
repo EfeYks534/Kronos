@@ -18,7 +18,7 @@ void Lock(int64_t *lock)
 
 	int r = 0;
 
-	size_t tries = 1000000;
+	size_t tries = 10000000;
 
 	do
 	{

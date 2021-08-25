@@ -15,13 +15,6 @@
 
 static int late_init = 0;
 
-void Peter()
-{
-	while(1) {
-		Info("Peter %u here!\n", ProcCurrent()->task->tid);
-	}
-}
-
 void KernelInit()
 {
 	KernelEarlyInit();
@@ -33,10 +26,10 @@ void KernelInit()
 	Info("Total memory   : %l KiBs\n", sm_info->pm_total   / 1024);
 	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable  / 1024);
 	Info("Used memory    : %l KiBs\n", sm_info->pm_used    / 1024);
-	Info("Virtual memory : %l KiBs\n\n", sm_info->vm_total * 4096 / 1024);
+	Info("Virtual memory : %l KiBs\n", sm_info->vm_total * 4096 / 1024);
 	Info("MAlloc memory  : %l KiBs\n\n", MAllocTotal()     / 1024);
 
-	Info("ACPI system descriptor tables:\n");
+	Info("Found %u ACPI system descriptor tables:\n", SDTCount());
 
 	for(size_t i = 0; i < SDTCount(); i++) {
 		struct SDTHeader *header = ACPIGetSDT(i);
@@ -63,13 +56,11 @@ void KernelInit()
 
 	KernelDeviceInit();
 
-	struct Task *t1 = TaskSpawn(Peter, 0, TICKET_IDEAL);
-	struct Task *t2 = TaskSpawn(Peter, 0, TICKET_IDEAL);
-
-	t1->core = ProcBSP();
-	t2->core = ProcBSP();
-
-	Info("Created tasks %u and %u\n", t1->tid, t2->tid);
+	Info("Total memory   : %l KiBs\n", sm_info->pm_total   / 1024);
+	Info("Usable memory  : %l KiBs\n", sm_info->pm_usable  / 1024);
+	Info("Used memory    : %l KiBs\n", sm_info->pm_used    / 1024);
+	Info("Virtual memory : %l KiBs\n", sm_info->vm_total * 4096 / 1024);
+	Info("MAlloc memory  : %l KiBs\n\n", MAllocTotal()     / 1024);
 }
 
 void KernelIdle(uint64_t is_idle)
@@ -96,12 +87,14 @@ void KernelIdle(uint64_t is_idle)
 		while(1) {
 			if(late_init && !is_init && ProcID() != ProcBSP()) {
 				is_init = 1;
+
 				APICTimerEnable();
-				asm volatile("sti");
 			}
 
-			asm volatile("hlt");
-			Yield();
+			if(is_init)
+				asm volatile("hlt");
+			else
+				asm volatile("pause");
 		}
 	}
 
