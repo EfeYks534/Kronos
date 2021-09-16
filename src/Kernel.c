@@ -16,23 +16,6 @@
 
 static int late_init = 0;
 
-void TimerTask()
-{
-	size_t times_scheduled = 0;
-
-	struct DevTimer *timer = DevicePrimary(DEV_CATEGORY_TIMER);
-	size_t time = timer->time(timer);
-
-	while(timer->time(timer) - time < 5000000000) {
-		Yield();
-		times_scheduled++;
-	}
-
-	Info("Task %u scheduled %u times\n", ProcCurrent()->task->tid, times_scheduled);
-
-	while(1) asm volatile("hlt");
-}
-
 void KernelInit()
 {
 	KernelEarlyInit();
@@ -80,14 +63,29 @@ void KernelInit()
 	Info("Virtual memory : %l KiBs\n", sm_info->vm_total * 4096 / 1024);
 	Info("MAlloc memory  : %l KiBs\n\n", MAllocTotal()     / 1024);
 
-	asm volatile("cli");
 
-	for(int i = 0; i < 10; i++)
-		TaskSpawn(TimerTask, 0, TICKET_IDEAL);
+	struct IPMessage messages[4] = { 0 };
 
-	Info("Testing tasks!\n");
+	for(int i = 0; i < 4; i++) {
+		struct IPMessage *msg = &messages[i];
 
-	asm volatile("sti");
+		msg->type = IPMSG_PING;
+		msg->mqw1 = timer->time(timer);
+
+		ProcMessage(msg, 1, i % ProcCount());
+	}
+
+
+	for(int i = 0; i < 4; i++) {
+		struct IPMessage *msg = &messages[i];
+
+		if(msg->done != 1 || msg->mqw2 == 1)
+			continue;
+
+		Info("Pong! (%u ns)\n", (timer->time(timer) - msg->mqw1));
+
+		msg->mqw2 = 1;
+	}
 }
 
 void KernelIdle(uint64_t is_idle)
@@ -137,10 +135,8 @@ void KernelIdle(uint64_t is_idle)
 	task->pause   = 1;
 	task->core    = ProcID();
 
-	uint64_t stack = (uint64_t) calloc(16384, 1);
-
 	task->regs.ss    = 0x10;
-	task->regs.rsp   = stack + 16384;
+	task->regs.rsp   = (uint64_t) task->kernel_stack + 4096;
 	task->regs.flags = 1ULL << 21;
 	task->regs.cs    = 0x08;
 	task->regs.rip   = (uintptr_t) KernelIdle;

@@ -6,6 +6,7 @@
 #include <Task.h>
 #include <ACPI.h>
 #include <APIC.h>
+#include <Core.h>
 
 struct MADTLAPICOverride
 {
@@ -34,6 +35,36 @@ static void TimerHandler(struct Registers *regs, uint64_t arg)
 	Schedule(regs);
 }
 
+static void IPIHandler(struct Registers *regs, uint64_t arg)
+{
+	struct IPMessageCntl *cntl = &ProcCurrent()->msg_cntl;
+
+	if(!cntl->busy || cntl->msg_count == 0 || cntl->msg_list == NULL)
+		Panic(NULL, "IPI with no pending messages");
+
+
+	for(size_t i = 0; i < cntl->msg_count; i++) {
+		struct IPMessage *msg = &cntl->msg_list[i];
+
+		switch(msg->type)
+		{
+		case IPMSG_PING: {
+			msg->res  = IPMSG_SUCCESS;
+			msg->done = 1;
+			break;
+		  }
+		default:
+			Panic(NULL, "Can't recognize message");
+		}
+	}
+
+
+	cntl->msg_list  = NULL;
+	cntl->msg_count = 0;
+
+	APICEOI();
+	cntl->busy = 0;
+}
 
 static void KLINIT APICInit()
 {
@@ -70,6 +101,7 @@ static void KLINIT APICInit()
 
 	IDTEntrySet(0xFF, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, SpurHandler);
 	IDTEntrySet(0xFE, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, TimerHandler);
+	IDTEntrySet(0xFD, IDT_ATTR_PRESENT | IDT_ATTR_INTR, 0, IPIHandler);
 
 	uint32_t spur = MMRead32(&lapic_addr[LAPIC_SPUR]);
 	MMWrite32(&lapic_addr[LAPIC_SPUR], spur | (1ULL << 8) | 0xFF);
@@ -98,6 +130,22 @@ void APICEOI()
 	MMWrite32(&lapic_addr[LAPIC_EOI], 0);
 }
 
-void ICRSend(struct ICR *icr);
+void ICRSend(struct ICR *icr)
+{
+	uint32_t *icr32 = (uint32_t*) icr;
 
-void IPISend(uint8_t type, uint32_t dest);
+	MMWrite32(&lapic_addr[LAPIC_ICR_HIGH], icr32[1]);
+	MMWrite32(&lapic_addr[LAPIC_ICR_LOW],  icr32[0]);
+}
+
+void IPISend(uint8_t type, uint32_t dest)
+{
+	struct ICR icr = (struct ICR) { 0 };
+
+	icr.vector = LAPIC_INTIPI;
+	icr.level  = 1;
+	icr.destt  = type;
+	icr.dest   = dest;
+
+	ICRSend(&icr);
+}

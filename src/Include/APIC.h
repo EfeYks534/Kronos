@@ -4,16 +4,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define LAPIC_EOI    0x0B0
-#define LAPIC_SPUR   0x0F0
-#define LAPIC_LVT    0x320
-#define LAPIC_LINT0  0x350
-#define LAPIC_LINT1  0x360
-#define LAPIC_ICOUNT 0x380
-#define LAPIC_CCOUNT 0x390
-#define LAPIC_DIVCFG 0x3E0
+#define LAPIC_EOI      0x0B0
+#define LAPIC_SPUR     0x0F0
+#define LAPIC_ICR_LOW  0x300
+#define LAPIC_ICR_HIGH 0x310
+#define LAPIC_LVT      0x320
+#define LAPIC_LINT0    0x350
+#define LAPIC_LINT1    0x360
+#define LAPIC_ICOUNT   0x380
+#define LAPIC_CCOUNT   0x390
+#define LAPIC_DIVCFG   0x3E0
 
-#define LAPIC_INTN   0xFE
+#define LAPIC_INTIPI   0xFD
+#define LAPIC_INTN     0xFE
+#define LAPIC_INTSPUR  0xFF
 
 struct ICR
 {
