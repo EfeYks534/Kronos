@@ -40,6 +40,7 @@ struct Task
 
 	struct Registers      regs __attribute__((aligned(16))); // General purpose regs
 	uint8_t     ext_regs[2048] __attribute__((aligned(16))); // Other registers
+	uint8_t kernel_stack[4096] __attribute__((aligned(16))); // TSS stack for user tasks
 };
 
 struct Task *TaskGet(uint64_t tid);

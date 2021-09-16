@@ -68,11 +68,11 @@ static int64_t lock = 0;
 
 	gdt_entry_count += 2;
 
-	TSSEntrySet(6, (uint64_t) &ProcCurrent()->tss, sizeof(struct TSS), access, 0);
+	TSSEntrySet(5, (uint64_t) &ProcCurrent()->tss, sizeof(struct TSS), access, 0);
 
 	GDTFlush(&gdt_ptr);
 
-	uint16_t selector = 0x30;
+	uint16_t selector = 0x28;
 
 	asm volatile("ltr %0" ::"a"(selector));
 
@@ -103,7 +103,7 @@ void GDTLoad()
 
 	gdt_entry_count += 2;
 
-	TSSEntrySet(6, 0, sizeof(struct TSS), 0x89, 0x40);
+	TSSEntrySet(5, 0, sizeof(struct TSS), 0x89, 0x40);
 
 	GDTInstall();
 }

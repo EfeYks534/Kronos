@@ -1,6 +1,7 @@
+#include <DescTabs.h>
 #include <Common.h>
 #include <Memory.h>
-#include <DescTabs.h>
+#include <Core.h>
 
 const char *exceptions[] =
 {
@@ -46,9 +47,16 @@ static void ExceptionHandler(struct Registers *regs, uint64_t arg)
 			}
 		}
 
+		if(ProcCurrent()->task != NULL)
+			if(ProcCurrent()->task->privl == 0)
+				Panic(regs, "Memory access violation while accessing %xl in ring 3", cr2);
+
 		Panic(regs, "Memory access violation while accessing %xl", cr2);
 	}
 
+	if(ProcCurrent()->task != NULL)
+		if(ProcCurrent()->task->privl == 0)
+			Panic(regs, "%s in ring 3", exceptions[vector]);
 	Panic(regs, "%s", exceptions[vector]);
 }
 

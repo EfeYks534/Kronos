@@ -125,6 +125,9 @@ static void Switch(struct Task *task, struct Registers *regs)
 
 	task->running = 1;
 
+	if(task->privl == 0)
+		ProcCurrent()->tss.rsp0 = (uint64_t) task->kernel_stack + 4096;
+
 	MSwitch(task->space);
 
 	Unlock(&tasks_lock);
@@ -196,13 +199,11 @@ struct Task *TaskSpawn(void (*ent)(), uint64_t arg, size_t tickets)
 	task->tid     = TIDNew();
 	task->tickets = tickets;
 	task->privl   = 1;
-	task->space   = MKernel();
+	task->space   = MAddrSpaceAlloc();
 	task->core    = next_core++ % ProcCount();
 
-	uint64_t stack = (uint64_t) calloc(16384, 1);
-
 	task->regs.ss    = 0x10;
-	task->regs.rsp   = stack + 16384;
+	task->regs.rsp   = (uintptr_t) task->kernel_stack + 4096;
 	task->regs.flags = 1ULL << 21 | 1ULL << 9;
 	task->regs.cs    = 0x08;
 	task->regs.rip   = (uintptr_t) ent;

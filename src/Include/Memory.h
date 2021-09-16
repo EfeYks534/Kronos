@@ -59,9 +59,11 @@ void VMInit();
 
 void MSwitch(struct AddressSpace *space);
 
-struct AddressSpace *MKernel();
+void MSwitchKernel();
 
 struct AddressSpace *MActive();
+
+struct AddressSpace *MAddrSpaceAlloc();
 
 void MMapHuge(void *virt, void *phys, uint16_t flags);
 

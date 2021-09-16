@@ -6,6 +6,7 @@
 #include <Memory.h>
 #include <Stivale2.h>
 #include <Peripheral.h>
+#include <FileSystem.h>
 #include <DescTabs.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -14,6 +15,23 @@
 #include <stdio.h>
 
 static int late_init = 0;
+
+void TimerTask()
+{
+	size_t times_scheduled = 0;
+
+	struct DevTimer *timer = DevicePrimary(DEV_CATEGORY_TIMER);
+	size_t time = timer->time(timer);
+
+	while(timer->time(timer) - time < 5000000000) {
+		Yield();
+		times_scheduled++;
+	}
+
+	Info("Task %u scheduled %u times\n", ProcCurrent()->task->tid, times_scheduled);
+
+	while(1) asm volatile("hlt");
+}
 
 void KernelInit()
 {
@@ -61,6 +79,15 @@ void KernelInit()
 	Info("Used memory    : %l KiBs\n", sm_info->pm_used    / 1024);
 	Info("Virtual memory : %l KiBs\n", sm_info->vm_total * 4096 / 1024);
 	Info("MAlloc memory  : %l KiBs\n\n", MAllocTotal()     / 1024);
+
+	asm volatile("cli");
+
+	for(int i = 0; i < 10; i++)
+		TaskSpawn(TimerTask, 0, TICKET_IDEAL);
+
+	Info("Testing tasks!\n");
+
+	asm volatile("sti");
 }
 
 void KernelIdle(uint64_t is_idle)
@@ -89,20 +116,22 @@ void KernelIdle(uint64_t is_idle)
 				is_init = 1;
 
 				APICTimerEnable();
+				asm volatile("sti");
 			}
 
 			if(is_init)
-				asm volatile("hlt");
+				Yield();
 			else
 				asm volatile("pause");
 		}
 	}
 
+	
 	struct Task *task = calloc(1, sizeof(struct Task));
 
 	task->tid = TIDNew();
 
-	task->space   = MKernel();
+	task->space   = MAddrSpaceAlloc();
 	task->privl   = 1;
 	task->invl    = 1;
 	task->pause   = 1;
@@ -127,7 +156,7 @@ void APMain()
 	GDTInstall();
 	IDTInstall();
 
-	MSwitch(MKernel());
+	MSwitchKernel();
 
 	struct SMInfo *sm_info = SysMemInfo();
 

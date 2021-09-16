@@ -8,7 +8,23 @@
 
 static struct SMInfo *sm_info = NULL;
 
-static struct AddressSpace kspace = { 0 };
+static struct AddressSpace dummy_space = (struct AddressSpace) { 0 };
+
+
+struct AddressSpace *MAddrSpaceAlloc()
+{
+	struct AddressSpace *space = calloc(1, sizeof(struct AddressSpace));
+	space->ptab = (uint64_t*) PMAlloc();
+	memset(PhysOffset(space->ptab), 0, 2048);
+
+	uint64_t *ph  = PhysOffset(space->ptab);
+	uint64_t *kph = PhysOffset(sm_info->ptab);
+	
+	for(int i = 256; i < 512; i++)
+		ph[i] = kph[i];
+
+	return space;
+}
 
 void VMInit()
 {
@@ -19,17 +35,13 @@ void VMInit()
 	sm_info->ptab = (uint64_t*) PMAlloc();
 	memset(PhysOffset(sm_info->ptab), 0, 4096);
 
+	dummy_space.ptab = sm_info->ptab;
+	ProcCurrent()->space = &dummy_space;
 
-	// Set the current address space to the kernel address space
-
-	kspace.ptab = sm_info->ptab;
-	ProcCurrent()->space = &kspace;
 
 	uint64_t *ph = PhysOffset(sm_info->ptab);
-	for(int i = 256; i < 512; i++) {
-
+	for(int i = 256; i < 512; i++)
 		ph[i] = PMAlloc() | PAGE_PRESENT | PAGE_RDWR;
-	}
 
 
 	for(uintptr_t phys = 0; phys < sm_info->pm_total; phys += 2097152)
@@ -38,7 +50,7 @@ void VMInit()
 	for(uintptr_t phys = 0; phys < 0x80000000; phys += 2097152)
 		MMapHuge((void*) (KERNEL_OFFSET + phys), (void*) phys, PAGE_PRESENT | PAGE_RDWR);
 
-	MSwitch(&kspace);
+	MSwitchKernel();
 }
 
 void MSwitch(struct AddressSpace *space)
@@ -46,6 +58,15 @@ void MSwitch(struct AddressSpace *space)
 	uintptr_t ptab = (uintptr_t) space->ptab;
 
 	ProcCurrent()->space = space;
+
+	asm volatile("mov %0, %%cr3" :: "a"(ptab) :"memory");
+}
+
+void MSwitchKernel()
+{
+	uintptr_t ptab = (uintptr_t) sm_info->ptab;
+
+	ProcCurrent()->space = &dummy_space;
 
 	asm volatile("mov %0, %%cr3" :: "a"(ptab) :"memory");
 }
@@ -307,9 +328,4 @@ void *MPhys(void *virt)
 		Unlock(&MActive()->lock);
 
 	return ret;
-}
-
-struct AddressSpace *MKernel()
-{
-	return &kspace;
 }
